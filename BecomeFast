@@ -6,9 +6,6 @@ local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
 
--- =========================
--- WEBHOOK
--- =========================
 local WEBHOOK = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
 
 local function sendWebhook(title, desc)
@@ -29,23 +26,19 @@ local function sendWebhook(title, desc)
 	end)
 end
 
--- =========================
--- ENCRYPTED KEY SYSTEM (BecomeFastestVonX)
--- =========================
-local _keyData = {66, 101, 99, 111, 109, 101, 70, 97, 115, 116, 101, 115, 116, 86, 111, 110, 88} -- ASCII
-local function checkKey(input)
-	if #input ~= #_keyData then return false end
-	for i = 1, #_keyData do
-		if input:byte(i) ~= _keyData[i] then
+-- ====== KEY SYSTEM (encrypted) ======
+local _d = {66,101,99,111,109,101,70,97,115,116,101,115,116,86,111,110,88}
+local function _k(i)
+	if #i ~= #_d then return false end
+	for x = 1, #_d do
+		if i:byte(x) ~= _d[x] then
 			return false
 		end
 	end
 	return true
 end
 
--- =========================
--- CLEAN OLD GUI
--- =========================
+-- ====== CLEAN GUI ======
 if CoreGui:FindFirstChild("VonX_Login") then
 	CoreGui.VonX_Login:Destroy()
 end
@@ -54,9 +47,7 @@ if getgenv().VonXAutoFarmGUI then
 	getgenv().VonXAutoFarmGUI = nil
 end
 
--- =========================
--- LOGIN GUI (Neon Green / Black)
--- =========================
+-- ====== LOGIN GUI ======
 local LoginGui = Instance.new("ScreenGui", CoreGui)
 LoginGui.Name = "VonX_Login"
 LoginGui.ResetOnSpawn = false
@@ -121,9 +112,7 @@ DiscordBtn.MouseButton1Click:Connect(function()
 	DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
 end)
 
--- =========================
--- AUTO FARM CONFIG
--- =========================
+-- ====== AUTO FARM CONFIG ======
 local tpDelay = 1
 local yOffset = -0.7
 
@@ -136,11 +125,9 @@ local targetCFrame = CFrame.new(
 	0.306372851, 0.937300563, -0.166511193
 )
 
--- =========================
--- MAIN HUB GUI
--- =========================
+-- ====== MAIN HUB ======
 local function loadVonXHub()
-	sendWebhook("Login Success", player.Name.." logged in with correct key.")
+	sendWebhook("Login Success", player.Name.." logged in.")
 
 	local gui = Instance.new("ScreenGui", CoreGui)
 	gui.Name = "VonX_AutoFarm"
@@ -190,13 +177,11 @@ local function loadVonXHub()
 	autoBtn.TextSize = 14
 	Instance.new("UICorner", autoBtn).CornerRadius = UDim.new(0,8)
 
-	-- OPEN / CLOSE
 	openBtn.MouseButton1Click:Connect(function()
 		frame.Visible = not frame.Visible
 		openBtn.Text = frame.Visible and "CLOSE" or "OPEN"
 	end)
 
-	-- AUTO FARM
 	local farming = false
 	autoBtn.MouseButton1Click:Connect(function()
 		farming = not farming
@@ -211,7 +196,6 @@ local function loadVonXHub()
 		sendWebhook("Auto Farm Toggled", player.Name.." -> "..(farming and "ON" or "OFF"))
 	end)
 
-	-- LOOP
 	task.spawn(function()
 		while true do
 			task.wait(tpDelay)
@@ -225,12 +209,10 @@ local function loadVonXHub()
 	end)
 end
 
--- =========================
--- LOGIN LOGIC
--- =========================
+-- ====== LOGIN LOGIC ======
 Submit.MouseButton1Click:Connect(function()
 	local enteredKey = KeyBox.Text
-	if checkKey(enteredKey) then
+	if _k(enteredKey) then
 		Submit.Text = "✅ Access Granted"
 		task.wait(0.5)
 		LoginGui:Destroy()
