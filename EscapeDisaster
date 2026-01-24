@@ -1,147 +1,323 @@
 -- ============================================
---           VONX HUB - TELEPORT GUI
+--              VonX HUB PC v1
 -- ============================================
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-local HttpService = game:GetService("HttpService")
+
 local LocalPlayer = Players.LocalPlayer
 
--- ==============================
--- CONFIGS
--- ==============================
-local isMobile = UserInputService.TouchEnabled
-local TELEPORT_LOCATIONS = { END = Vector3.new(-6000,3,69), LOBBY = Vector3.new(-175,3,64) }
-
--- GUI THEME OPTIONS
-local themes = {
-    ["RedBlack"] = {Main=Color3.fromRGB(20,20,20), Button=Color3.fromRGB(255,50,50)},
-    ["BlueBlack"] = {Main=Color3.fromRGB(20,20,20), Button=Color3.fromRGB(50,150,255)},
-    ["BlueWhite"] = {Main=Color3.fromRGB(240,240,255), Button=Color3.fromRGB(50,150,255)},
-    ["GreenBlack"] = {Main=Color3.fromRGB(20,20,20), Button=Color3.fromRGB(50,255,50)}
+-- Config
+local GUI_COLORS = {
+    RedBlack = {Background = Color3.fromRGB(30,30,40), Accent = Color3.fromRGB(255,60,60)},
+    BlueBlack = {Background = Color3.fromRGB(20,20,35), Accent = Color3.fromRGB(50,150,255)},
+    BlueWhite = {Background = Color3.fromRGB(230,230,255), Accent = Color3.fromRGB(50,50,255)},
+    GreenBlack = {Background = Color3.fromRGB(20,35,20), Accent = Color3.fromRGB(50,255,50)},
 }
-local currentTheme = themes["RedBlack"]
+local SELECTED_COLOR = GUI_COLORS.RedBlack
+local WEBHOOK_URL = "https://your-previous-webhook-url.com"
 
--- ==============================
--- NOTIFICATIONS
--- ==============================
-local function notify(text)
-    if CoreGui:FindFirstChild("VonXNotification") then CoreGui.VonXNotification:Destroy() end
-    local gui = Instance.new("ScreenGui", CoreGui)
-    gui.Name = "VonXNotification"
-    gui.DisplayOrder = 999
-    local frame = Instance.new("Frame", gui)
-    frame.Size = UDim2.new(0.8,0,0,50)
-    frame.Position = UDim2.new(0.1,0,0.9,0)
-    frame.BackgroundColor3 = Color3.fromRGB(20,20,35)
-    frame.BackgroundTransparency = 0.2
-    frame.BorderSizePixel = 0
-    Instance.new("UICorner",frame).CornerRadius=UDim.new(0,10)
-    local textLabel = Instance.new("TextLabel",frame)
-    textLabel.Size = UDim2.new(1,-20,1,-20)
-    textLabel.Position = UDim2.new(0,10,0,10)
-    textLabel.Text = text
-    textLabel.TextColor3 = Color3.fromRGB(255,255,255)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Font = Enum.Font.Gotham
-    textLabel.TextSize = 16
-    task.delay(3,function() gui:Destroy() end)
+-- Key system
+local CORRECT_KEY = "EscapeForVonX"
+local function EncodeKey(key)
+    local encoded = ""
+    for i = 1,#key do
+        encoded = encoded .. string.char(key:byte(i)+3)
+    end
+    return encoded
 end
 
--- ==============================
--- TELEPORT FUNCTION
--- ==============================
-local function TeleportTo(locationName)
+local function DecodeKey(encoded)
+    local decoded = ""
+    for i = 1,#encoded do
+        decoded = decoded .. string.char(encoded:byte(i)-3)
+    end
+    return decoded
+end
+
+local ENCODED_KEY = EncodeKey(CORRECT_KEY)
+
+-- Notifications
+local function ShowNotification(text,duration)
+    if CoreGui:FindFirstChild("VonXNotification") then
+        CoreGui.VonXNotification:Destroy()
+    end
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "VonXNotification"
+    screenGui.ResetOnSpawn = false
+    screenGui.Parent = CoreGui
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.4,0,0,50)
+    frame.Position = UDim2.new(0.3,0,1.1,0)
+    frame.BackgroundColor3 = SELECTED_COLOR.Background
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+    frame.ClipsDescendants = true
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,10)
+    corner.Parent = frame
+
+    local shadow = Instance.new("UIStroke")
+    shadow.Color = SELECTED_COLOR.Accent
+    shadow.Thickness = 2
+    shadow.Parent = frame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1,0,1,0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = SELECTED_COLOR.Accent
+    label.Text = text
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 16
+    label.Parent = frame
+
+    TweenService:Create(frame,TweenInfo.new(0.4,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Position=UDim2.new(0.3,0,0.9,0)}):Play()
+
+    task.spawn(function()
+        task.wait(duration or 3)
+        TweenService:Create(frame,TweenInfo.new(0.4,Enum.EasingStyle.Back,Enum.EasingDirection.In),{Position=UDim2.new(0.3,0,1.1,0)}):Play()
+        task.wait(0.4)
+        screenGui:Destroy()
+    end)
+end
+
+local function SendWebhook(message)
+    pcall(function()
+        game:GetService("HttpService"):PostAsync(WEBHOOK_URL, message)
+    end)
+end
+
+-- Teleport system
+local TELEPORT_LOCATIONS = {
+    END = Vector3.new(-6000,3,69),
+    LOBBY = Vector3.new(-175,3,64)
+}
+
+local function TeleportTo(name)
     local character = LocalPlayer.Character
     if not character then return end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    local loc = TELEPORT_LOCATIONS[locationName]
-    if not loc then return end
-    local humanoid = character:FindFirstChild("Humanoid")
-    if humanoid and humanoid.Health <=0 then notify("❌ You must be alive!") return end
-    hrp.CFrame = CFrame.new(loc)
-    notify("✅ Teleported to "..locationName)
+    local root = character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local location = TELEPORT_LOCATIONS[name]
+    if not location then return end
+
+    root.CFrame = CFrame.new(location)
+    ShowNotification("Teleported to "..name,2)
 end
 
--- ==============================
--- GUI
--- ==============================
-local teleportGUI = nil
-local function CreateTeleportGUI()
-    if CoreGui:FindFirstChild("VonXTeleportGUI") then CoreGui.VonXTeleportGUI:Destroy() end
-    teleportGUI = Instance.new("ScreenGui", CoreGui)
-    teleportGUI.Name = "VonXTeleportGUI"
+-- ============================================
+--                GUI SYSTEM
+-- ============================================
 
-    local frame = Instance.new("Frame", teleportGUI)
-    frame.Size = UDim2.new(0,200,0,150)
-    frame.Position = UDim2.new(0.8,0,0.1,0)
-    frame.BackgroundColor3 = currentTheme.Main
-    Instance.new("UICorner",frame).CornerRadius=UDim.new(0,12)
+local loginGui = nil
+local menuGui = nil
 
-    local endBtn = Instance.new("TextButton",frame)
-    endBtn.Size = UDim2.new(0,160,0,40)
-    endBtn.Position = UDim2.new(0,20,0,20)
-    endBtn.Text = "Teleport END"
-    endBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    endBtn.BackgroundColor3 = currentTheme.Button
-    Instance.new("UICorner",endBtn).CornerRadius=UDim.new(0,8)
-    endBtn.MouseButton1Click:Connect(function() TeleportTo("END") end)
+-- Helper: Make frame draggable
+local function MakeDraggable(frame)
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
 
-    local lobbyBtn = Instance.new("TextButton",frame)
-    lobbyBtn.Size = UDim2.new(0,160,0,40)
-    lobbyBtn.Position = UDim2.new(0,20,0,80)
-    lobbyBtn.Text = "Teleport LOBBY"
-    lobbyBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    lobbyBtn.BackgroundColor3 = currentTheme.Button
-    Instance.new("UICorner",lobbyBtn).CornerRadius=UDim.new(0,8)
-    lobbyBtn.MouseButton1Click:Connect(function() TeleportTo("LOBBY") end)
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = Vector2.new(input.Position.X,input.Position.Y)
+            startPos = frame.Position
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = Vector2.new(input.Position.X - dragStart.X,input.Position.Y - dragStart.Y)
+            frame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    frame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
 end
 
--- ==============================
--- THEME SWITCHER
--- ==============================
-local function ChangeTheme(themeName)
-    local theme = themes[themeName]
-    if not theme then return end
-    currentTheme = theme
-    if teleportGUI then
-        local frame = teleportGUI:FindFirstChildOfClass("Frame")
-        if frame then
-            frame.BackgroundColor3 = currentTheme.Main
-            for _,child in ipairs(frame:GetChildren()) do
+-- Button hover animation
+local function SetupButtonHover(button,normalColor,hoverColor)
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button,TweenInfo.new(0.2),{BackgroundColor3=hoverColor}):Play()
+    end)
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button,TweenInfo.new(0.2),{BackgroundColor3=normalColor}):Play()
+    end)
+end
+
+-- Login GUI
+local function ShowLogin()
+    loginGui = Instance.new("ScreenGui")
+    loginGui.Name = "VonXLoginGUI"
+    loginGui.ResetOnSpawn = false
+    loginGui.Parent = CoreGui
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0,420,0,240)
+    frame.Position = UDim2.new(0.5,-210,0.5,-120)
+    frame.BackgroundColor3 = SELECTED_COLOR.Background
+    frame.BorderSizePixel = 0
+    frame.Parent = loginGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,15)
+    corner.Parent = frame
+
+    local shadow = Instance.new("UIStroke")
+    shadow.Color = SELECTED_COLOR.Accent
+    shadow.Thickness = 2
+    shadow.Transparency = 0.5
+    shadow.Parent = frame
+
+    MakeDraggable(frame)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1,0,0,50)
+    title.Position = UDim2.new(0,0,0,0)
+    title.BackgroundTransparency = 1
+    title.Text = "Enter Key"
+    title.TextColor3 = SELECTED_COLOR.Accent
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 28
+    title.Parent = frame
+
+    local keyBox = Instance.new("TextBox")
+    keyBox.Size = UDim2.new(0.8,0,0,40)
+    keyBox.Position = UDim2.new(0.1,0,0.35,0)
+    keyBox.PlaceholderText = "Key..."
+    keyBox.Text = ""
+    keyBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    keyBox.TextColor3 = Color3.fromRGB(255,255,255)
+    keyBox.ClearTextOnFocus = true
+    keyBox.Parent = frame
+
+    local submit = Instance.new("TextButton")
+    submit.Size = UDim2.new(0.5,0,0,45)
+    submit.Position = UDim2.new(0.25,0,0.6,0)
+    submit.BackgroundColor3 = SELECTED_COLOR.Accent
+    submit.TextColor3 = Color3.fromRGB(255,255,255)
+    submit.Text = "Submit"
+    submit.Font = Enum.Font.GothamBold
+    submit.TextSize = 18
+    submit.Parent = frame
+    SetupButtonHover(submit,SELECTED_COLOR.Accent,Color3.fromRGB(255,255,255))
+
+    local info = Instance.new("TextLabel")
+    info.Size = UDim2.new(1,0,0,20)
+    info.Position = UDim2.new(0,0,0.9,0)
+    info.BackgroundTransparency = 1
+    info.Text = "Get Key discord.com/invite/smdeH3uHBR"
+    info.TextColor3 = Color3.fromRGB(200,200,255)
+    info.Font = Enum.Font.Gotham
+    info.TextSize = 14
+    info.Parent = frame
+
+    submit.MouseButton1Click:Connect(function()
+        if keyBox.Text == DecodeKey(ENCODED_KEY) then
+            ShowNotification("Key correct! Access granted",2)
+            loginGui:Destroy()
+            ShowMenu()
+        else
+            ShowNotification("Wrong key!",2)
+            SendWebhook("Wrong key attempt by "..LocalPlayer.Name)
+        end
+    end)
+end
+
+-- Menu GUI
+function ShowMenu()
+    menuGui = Instance.new("ScreenGui")
+    menuGui.Name = "VonXMenuGUI"
+    menuGui.ResetOnSpawn = false
+    menuGui.Parent = CoreGui
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0,450,0,350)
+    frame.Position = UDim2.new(0.5,-225,0.5,-175)
+    frame.BackgroundColor3 = SELECTED_COLOR.Background
+    frame.BorderSizePixel = 0
+    frame.Parent = menuGui
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0,18)
+    corner.Parent = frame
+
+    local shadow = Instance.new("UIStroke")
+    shadow.Color = SELECTED_COLOR.Accent
+    shadow.Thickness = 2
+    shadow.Transparency = 0.4
+    shadow.Parent = frame
+
+    MakeDraggable(frame)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1,0,0,50)
+    title.Position = UDim2.new(0,0,0,0)
+    title.BackgroundTransparency = 1
+    title.Text = "VonX HUB"
+    title.TextColor3 = SELECTED_COLOR.Accent
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 32
+    title.Parent = frame
+
+    -- Teleport buttons
+    local function createTPButton(text,pos,callback)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0.8,0,0,45)
+        btn.Position = pos
+        btn.BackgroundColor3 = SELECTED_COLOR.Accent
+        btn.TextColor3 = Color3.fromRGB(255,255,255)
+        btn.Text = text
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 18
+        btn.Parent = frame
+        btn.MouseButton1Click:Connect(callback)
+        SetupButtonHover(btn,SELECTED_COLOR.Accent,Color3.fromRGB(255,255,255))
+        return btn
+    end
+
+    createTPButton("Teleport to END",UDim2.new(0.1,0,0.2,0),function() TeleportTo("END") end)
+    createTPButton("Teleport to LOBBY",UDim2.new(0.1,0,0.4,0),function() TeleportTo("LOBBY") end)
+
+    -- Color buttons
+    local colorNames = {"RedBlack","BlueBlack","BlueWhite","GreenBlack"}
+    for i,name in ipairs(colorNames) do
+        local color = GUI_COLORS[name]
+        local cBtn = Instance.new("TextButton")
+        cBtn.Size = UDim2.new(0.18,0,0,35)
+        cBtn.Position = UDim2.new(0.05 + (i-1)*0.23,0,0.7,0)
+        cBtn.BackgroundColor3 = color.Accent
+        cBtn.Text = ""
+        cBtn.Parent = frame
+        cBtn.MouseButton1Click:Connect(function()
+            SELECTED_COLOR = color
+            frame.BackgroundColor3 = color.Background
+            for _,child in pairs(frame:GetChildren()) do
                 if child:IsA("TextButton") then
-                    child.BackgroundColor3 = currentTheme.Button
+                    child.BackgroundColor3 = color.Accent
+                elseif child:IsA("TextLabel") then
+                    child.TextColor3 = color.Accent
                 end
             end
-        end
+            ShowNotification("Color changed!",2)
+        end)
+        SetupButtonHover(cBtn,color.Accent,Color3.fromRGB(255,255,255))
     end
 end
 
--- ==============================
--- INIT
--- ==============================
-if isMobile then
-    -- Mobile: Tıklanabilir top (V)
-    local ballGui = Instance.new("ScreenGui", CoreGui)
-    ballGui.Name = "VonXBallGUI"
-    local ball = Instance.new("TextButton",ballGui)
-    ball.Size = UDim2.new(0,80,0,80)
-    ball.Position = UDim2.new(0.02,0,0.02,0)
-    ball.Text = "V"
-    ball.Font = Enum.Font.GothamBold
-    ball.TextSize = 28
-    ball.TextColor3 = Color3.fromRGB(255,255,255)
-    ball.BackgroundColor3 = Color3.fromRGB(50,150,255)
-    Instance.new("UICorner",ball).CornerRadius=UDim.new(1,0)
-    ball.MouseButton1Click:Connect(function()
-        if teleportGUI then teleportGUI.Enabled = not teleportGUI.Enabled
-        else CreateTeleportGUI() end
-    end)
-else
-    -- PC: GUI teleport buttons
-    CreateTeleportGUI()
-end
+-- Initialize
+ShowLogin()
