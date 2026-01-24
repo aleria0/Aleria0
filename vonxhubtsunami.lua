@@ -1,280 +1,217 @@
+--// VonX HUB | Fixed Admin + GUI + Notifications
+
 repeat task.wait() until game:IsLoaded()
 
-local _GENV = getgenv or function() return _G end
-local _ENVX = _GENV()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CoreGui = game:GetService("CoreGui")
-local UIS = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
 local lp = Players.LocalPlayer
 
-local function _d(str)
-    local s = ""
-    for i = 1, #str do
-        s = s .. string.char(str:byte(i) - 1)
-    end
-    return s
-end
-
-local _KEY = _d("UtvobnjWpoY")
-local _OWNER = _d("xpyxmff`zbo")
-local _WEBHOOK = _d("iuuqt;00ejtdpse/dpn0bqj0xfcipplt014644742697517097260q6htc.GTtv95UiEESaxidzZM2nPH.OQSG.iCG3sNQ0COb[aKb.KeWue`4OpdH")
-
-local ADMINS = {[_OWNER] = true}
-
-local function notify(txt)
+-- =========================
+-- WEBHOOK & NOTIFY FUNCTION
+-- =========================
+local WEBHOOK = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
+local function sendWebhook(title, desc)
     pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "VonX HUB",
-            Text = txt,
-            Duration = 3
+        request({
+            Url = WEBHOOK,
+            Method = "POST",
+            Headers = {["Content-Type"]="application/json"},
+            Body = HttpService:JSONEncode({
+                username="VonX HUB Logger",
+                embeds={{title=title, description=desc, color=65280}}
+            })
         })
     end)
 end
 
-local function log(msg)
+local function notify(text)
     pcall(function()
-        local data = {
-            ["content"] = "**VonX HUB Log**\nUser: "..lp.Name.."\nMessage: "..msg
-        }
-        HttpService:PostAsync(_WEBHOOK, HttpService:JSONEncode(data))
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title="VonX HUB",
+            Text=text,
+            Duration=3
+        })
     end)
 end
 
-local function isAdmin(plr)
-    return ADMINS[plr.Name] == true
+-- =========================
+-- KEY CHECK
+-- =========================
+local _k = {84,115,117,110,97,109,105,86,111,110,88} -- TsunamiVonX ASCII
+local function _c(i)
+    if #i ~= #_k then return false end
+    for x = 1, #_k do if i:byte(x) ~= _k[x] then return false end end
+    return true
 end
 
-if CoreGui:FindFirstChild("VonX_Login") then
-    CoreGui.VonX_Login:Destroy()
+-- =========================
+-- ADMIN SYSTEM
+-- =========================
+local OWNER = "woxlee_yann"
+local Admins = {[OWNER]=true}
+local ActiveUsers = {}
+
+local function isAdmin(p)
+    return Admins[p.Name] == true
 end
 
-local GUI = Instance.new("ScreenGui", CoreGui)
-GUI.Name = "VonX_Login"
-GUI.ResetOnSpawn = false
+-- =========================
+-- GUI SETUP
+-- =========================
+if CoreGui:FindFirstChild("VonX_Login") then CoreGui.VonX_Login:Destroy() end
+if CoreGui:FindFirstChild("VonX_Main") then CoreGui.VonX_Main:Destroy() end
 
-local Frame = Instance.new("Frame", GUI)
-Frame.Size = UDim2.new(0, 320, 0, 240)
-Frame.Position = UDim2.new(0.5, -160, 0.5, -120)
-Frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
-Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 12)
+local LoginGui = Instance.new("ScreenGui", CoreGui)
+LoginGui.Name = "VonX_Login"
+LoginGui.ResetOnSpawn = false
 
-local UIStroke = Instance.new("UIStroke", Frame)
-UIStroke.Color = Color3.fromRGB(0, 255, 100)
-UIStroke.Thickness = 2
+local LoginFrame = Instance.new("Frame", LoginGui)
+LoginFrame.Size = UDim2.new(0,350,0,230)
+LoginFrame.Position = UDim2.new(0.5,-175,0.5,-115)
+LoginFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+LoginFrame.BorderSizePixel = 0
+LoginFrame.Active = true
+LoginFrame.Draggable = true
+Instance.new("UICorner", LoginFrame).CornerRadius = UDim.new(0,14)
+local Stroke = Instance.new("UIStroke", LoginFrame)
+Stroke.Color = Color3.fromRGB(0,255,100)
+Stroke.Thickness = 2
 
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 40)
+local Title = Instance.new("TextLabel", LoginFrame)
+Title.Size = UDim2.new(1,0,0,45)
 Title.BackgroundTransparency = 1
 Title.Text = "🔐 VonX HUB Login"
-Title.TextColor3 = Color3.fromRGB(0, 255, 100)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 18
+Title.TextColor3 = Color3.fromRGB(0,255,100)
 
-local Box = Instance.new("TextBox", Frame)
-Box.Size = UDim2.new(1, -40, 0, 40)
-Box.Position = UDim2.new(0, 20, 0, 60)
-Box.PlaceholderText = "Enter Key..."
-Box.Text = ""
-Box.ClearTextOnFocus = false
-Box.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-Box.TextColor3 = Color3.fromRGB(0, 255, 100)
-Box.Font = Enum.Font.Gotham
-Box.TextSize = 14
-Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", Box).Color = Color3.fromRGB(0, 255, 100)
+local KeyBox = Instance.new("TextBox", LoginFrame)
+KeyBox.Size = UDim2.new(1,-40,0,40)
+KeyBox.Position = UDim2.new(0,20,0,60)
+KeyBox.PlaceholderText = "Enter key here..."
+KeyBox.Text = ""
+KeyBox.ClearTextOnFocus = false
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.TextSize = 14
+KeyBox.TextColor3 = Color3.fromRGB(0,255,100)
+KeyBox.BackgroundColor3 = Color3.fromRGB(15,15,15)
+Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0,8)
 
-local Submit = Instance.new("TextButton", Frame)
-Submit.Size = UDim2.new(1, -40, 0, 40)
-Submit.Position = UDim2.new(0, 20, 0, 110)
-Submit.Text = "LOGIN"
-Submit.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-Submit.TextColor3 = Color3.fromRGB(0, 0, 0)
+local Submit = Instance.new("TextButton", LoginFrame)
+Submit.Size = UDim2.new(1,-40,0,40)
+Submit.Position = UDim2.new(0,20,0,115)
+Submit.Text = "Login"
 Submit.Font = Enum.Font.GothamBold
 Submit.TextSize = 14
-Instance.new("UICorner", Submit).CornerRadius = UDim.new(0, 6)
+Submit.TextColor3 = Color3.fromRGB(0,0,0)
+Submit.BackgroundColor3 = Color3.fromRGB(0,255,100)
+Instance.new("UICorner", Submit).CornerRadius = UDim.new(0,8)
 
-local GetKey = Instance.new("TextButton", Frame)
-GetKey.Size = UDim2.new(1, -40, 0, 30)
-GetKey.Position = UDim2.new(0, 20, 0, 160)
-GetKey.Text = "Get Key: discord.gg/smdeH3uHBR"
-GetKey.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-GetKey.TextColor3 = Color3.fromRGB(0, 255, 100)
-GetKey.Font = Enum.Font.Gotham
-GetKey.TextSize = 12
-Instance.new("UICorner", GetKey).CornerRadius = UDim.new(0, 6)
-Instance.new("UIStroke", GetKey).Color = Color3.fromRGB(0, 255, 100)
-
-GetKey.MouseButton1Click:Connect(function()
+local DiscordBtn = Instance.new("TextButton", LoginFrame)
+DiscordBtn.Size = UDim2.new(1,-40,0,30)
+DiscordBtn.Position = UDim2.new(0,20,0,165)
+DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
+DiscordBtn.Font = Enum.Font.Gotham
+DiscordBtn.TextSize = 12
+DiscordBtn.TextColor3 = Color3.fromRGB(0,255,100)
+DiscordBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+Instance.new("UICorner", DiscordBtn).CornerRadius = UDim.new(0,8)
+DiscordBtn.MouseButton1Click:Connect(function()
     setclipboard("https://discord.gg/smdeH3uHBR")
+    DiscordBtn.Text = "✔ Copied to clipboard!"
     notify("Discord link copied!")
+    task.wait(1.2)
+    DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
 end)
 
-local MAIN_GUI
-
-local function loadMain()
-    GUI:Destroy()
-    log("User logged in successfully")
+-- =========================
+-- LOAD HUB
+-- =========================
+local function loadVonXHub()
+    ActiveUsers[lp.Name]=true
+    sendWebhook("User Logged In", lp.Name.." logged in.")
     notify("Welcome to VonX HUB!")
 
     local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
     WindUI:SetNotificationLower(true)
 
-    MAIN_GUI = WindUI:CreateWindow({
-        Title = "VonX HUB",
-        Icon = "zap",
-        Author = "Neon Edition",
+    local Window = WindUI:CreateWindow({
+        Title="VonX HUB",
+        Icon="sparkles",
+        Author="Escape Tsunami for Brainrots",
+        Theme="Dark"
     })
+    Window:SetToggleKey(Enum.KeyCode.RightControl)
 
-    MAIN_GUI:SetToggleKey(Enum.KeyCode.RightControl)
-
-    local Main = MAIN_GUI:Tab({Title="Main",Icon="zap",Locked=false})
-    local Admin = MAIN_GUI:Tab({Title="Admin",Icon="shield",Locked=false})
+    local Main = Window:Tab({Title="Main", Icon="sparkles"})
+    local AdminTab = Window:Tab({Title="Admin Panel", Icon="shield"})
 
     Main:Select()
+    Main:Button({Title="Test Button", Callback=function()
+        notify("Test Button Pressed")
+        sendWebhook("Action", lp.Name.." pressed Test Button")
+    end})
 
-    local chopping = false
-    local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local AxeSwing = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("AxeSwing")
-
-    Main:Button({
-        Title = "Start Chopping",
-        Callback = function()
-            chopping = not chopping
-            if chopping then
-                notify("Chopping Started")
-                log("Chopping started")
-            else
-                notify("Chopping Stopped")
-                log("Chopping stopped")
+    -- =========================
+    -- ADMIN PANEL
+    -- =========================
+    if isAdmin(lp) then
+        AdminTab:Paragraph({Title="Owner: "..OWNER, Description="Admin Panel"})
+        AdminTab:Paragraph({
+            Title="Active Users",
+            Description=function()
+                local c=0
+                for _ in pairs(ActiveUsers) do c+=1 end
+                return "Users using VonX HUB: "..c
             end
-        end
-    })
-
-    task.spawn(function()
-        while true do
-            task.wait(0.01)
-            if chopping then
-                pcall(function()
-                    AxeSwing:FireServer()
-                end)
+        })
+        AdminTab:Input({Title="Add Admin", Placeholder="Player name", Callback=function(name)
+            if lp.Name==OWNER then
+                Admins[name]=true
+                notify("Admin added: "..name)
+                sendWebhook("Admin Added", lp.Name.." added "..name)
             end
-        end
-    end)
-
-    Main:Button({
-        Title = "Close Script",
-        Callback = function()
-            local Confirm = WindUI:CreateDialog({
-                Title = "Confirm",
-                Content = "Do you really want to close VonX HUB?",
-                Buttons = {
-                    {
-                        Title = "Yes",
-                        Callback = function()
-                            notify("Script Closed")
-                            log("Script closed by user")
-                            if MAIN_GUI then MAIN_GUI:Destroy() end
-                        end
-                    },
-                    {
-                        Title = "No",
-                        Callback = function() end
-                    }
-                }
-            })
-        end
-    })
-
-    if not isAdmin(lp) then
-        Admin:SetLocked(true)
-        return
-    end
-
-    notify("Admin access granted")
-    log("Admin access granted")
-
-    local playerList = {}
-
-    local function refreshPlayers()
-        playerList = {}
-        for _, plr in ipairs(Players:GetPlayers()) do
-            table.insert(playerList, plr.Name)
-        end
-    end
-
-    refreshPlayers()
-
-    Admin:Paragraph({
-        Title = "Active Players",
-        Content = function()
-            refreshPlayers()
-            return table.concat(playerList, "\n")
-        end
-    })
-
-    local selectedPlayer = nil
-
-    Admin:Dropdown({
-        Title = "Select Player",
-        Values = playerList,
-        Callback = function(opt)
-            selectedPlayer = opt
-        end
-    })
-
-    Admin:Button({
-        Title = "Add Admin",
-        Callback = function()
-            if selectedPlayer then
-                ADMINS[selectedPlayer] = true
-                notify("Admin added: "..selectedPlayer)
-                log("Admin added: "..selectedPlayer)
+        end})
+        AdminTab:Input({Title="Remove Admin", Placeholder="Player name", Callback=function(name)
+            if lp.Name==OWNER then
+                Admins[name]=nil
+                notify("Admin removed: "..name)
+                sendWebhook("Admin Removed", lp.Name.." removed "..name)
             end
-        end
-    })
-
-    Admin:Button({
-        Title = "Remove Admin",
-        Callback = function()
-            if selectedPlayer and selectedPlayer ~= _OWNER then
-                ADMINS[selectedPlayer] = nil
-                notify("Admin removed: "..selectedPlayer)
-                log("Admin removed: "..selectedPlayer)
-            end
-        end
-    })
-
-    Admin:Button({
-        Title = "Disable Player Script",
-        Callback = function()
-            if selectedPlayer then
-                for _, plr in ipairs(Players:GetPlayers()) do
-                    if plr.Name == selectedPlayer then
-                        notify("Script disabled for "..selectedPlayer)
-                        log("Script disabled for "..selectedPlayer)
-                    end
+        end})
+        AdminTab:Input({Title="Kick Player Script", Placeholder="Player name", Callback=function(name)
+            for plr in pairs(ActiveUsers) do
+                if plr==name then
+                    ActiveUsers[plr]=nil
+                    notify("Script disabled for "..plr)
+                    sendWebhook("Script Killed", lp.Name.." killed script for "..plr)
                 end
             end
-        end
-    })
-
+        end})
+    else
+        AdminTab:Lock("Admin Only 🔒")
+    end
 end
 
+-- =========================
+-- LOGIN LOGIC
+-- =========================
 Submit.MouseButton1Click:Connect(function()
-    if Box.Text == _KEY then
-        Submit.Text = "✔ Correct!"
-        task.wait(0.3)
-        loadMain()
+    local enteredKey=KeyBox.Text
+    if _c(enteredKey) then
+        Submit.Text="✅ Access Granted"
+        sendWebhook("Login Success", lp.Name.." entered correct key.")
+        notify("Login Successful!")
+        task.wait(0.5)
+        LoginGui:Destroy()
+        loadVonXHub()
     else
-        Submit.Text = "✖ Wrong Key!"
+        Submit.Text="❌ Wrong Key"
+        sendWebhook("Login Failed", lp.Name.." entered wrong key.")
+        notify("Wrong Key!")
         task.wait(1)
-        Submit.Text = "LOGIN"
-        notify("Wrong key!")
-        log("Wrong key attempt")
+        Submit.Text="Login"
     end
 end)
