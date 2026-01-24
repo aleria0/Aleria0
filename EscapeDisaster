@@ -1,323 +1,229 @@
 -- ============================================
---              VonX HUB PC v1
+--           VONX HUB - MOBILE & PC
 -- ============================================
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-
+local GuiService = game:GetService("GuiService")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
--- Config
-local GUI_COLORS = {
-    RedBlack = {Background = Color3.fromRGB(30,30,40), Accent = Color3.fromRGB(255,60,60)},
-    BlueBlack = {Background = Color3.fromRGB(20,20,35), Accent = Color3.fromRGB(50,150,255)},
-    BlueWhite = {Background = Color3.fromRGB(230,230,255), Accent = Color3.fromRGB(50,50,255)},
-    GreenBlack = {Background = Color3.fromRGB(20,35,20), Accent = Color3.fromRGB(50,255,50)},
-}
-local SELECTED_COLOR = GUI_COLORS.RedBlack
-local WEBHOOK_URL = "https://your-previous-webhook-url.com"
+-- ==============================
+-- CONFIGS
+-- ==============================
+local INTRO_DURATION = 3
+local isMobile = UserInputService.TouchEnabled
+local mobileMenuOpen = false
 
--- Key system
+-- ==============================
+-- KEY SYSTEM
+-- ==============================
 local CORRECT_KEY = "EscapeForVonX"
-local function EncodeKey(key)
-    local encoded = ""
-    for i = 1,#key do
-        encoded = encoded .. string.char(key:byte(i)+3)
-    end
-    return encoded
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
+
+local function sendWebhook(title,msg)
+    pcall(function()
+        HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode({
+            username = "VonX Logger",
+            embeds = {{
+                title = title,
+                description = msg,
+                color = 65280
+            }}
+        }))
+    end)
 end
 
-local function DecodeKey(encoded)
-    local decoded = ""
-    for i = 1,#encoded do
-        decoded = decoded .. string.char(encoded:byte(i)-3)
-    end
-    return decoded
-end
-
-local ENCODED_KEY = EncodeKey(CORRECT_KEY)
-
--- Notifications
-local function ShowNotification(text,duration)
+local function notify(text)
     if CoreGui:FindFirstChild("VonXNotification") then
         CoreGui.VonXNotification:Destroy()
     end
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "VonXNotification"
-    screenGui.ResetOnSpawn = false
-    screenGui.Parent = CoreGui
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0.4,0,0,50)
-    frame.Position = UDim2.new(0.3,0,1.1,0)
-    frame.BackgroundColor3 = SELECTED_COLOR.Background
+    local gui = Instance.new("ScreenGui", CoreGui)
+    gui.Name = "VonXNotification"
+    gui.DisplayOrder = 999
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.new(0.8,0,0,50)
+    frame.Position = UDim2.new(0.1,0,0.9,0)
+    frame.BackgroundColor3 = Color3.fromRGB(20,20,35)
+    frame.BackgroundTransparency = 0.2
     frame.BorderSizePixel = 0
-    frame.Parent = screenGui
-    frame.ClipsDescendants = true
-
-    local corner = Instance.new("UICorner")
+    local corner = Instance.new("UICorner",frame)
     corner.CornerRadius = UDim.new(0,10)
-    corner.Parent = frame
+    local textLabel = Instance.new("TextLabel",frame)
+    textLabel.Size = UDim2.new(1, -20,1,-20)
+    textLabel.Position = UDim2.new(0,10,0,10)
+    textLabel.Text = text
+    textLabel.TextColor3 = Color3.fromRGB(255,255,255)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Font = Enum.Font.Gotham
+    textLabel.TextSize = 16
+    task.delay(3,function() gui:Destroy() end)
+end
 
-    local shadow = Instance.new("UIStroke")
-    shadow.Color = SELECTED_COLOR.Accent
-    shadow.Thickness = 2
-    shadow.Parent = frame
+-- ==============================
+-- LOGIN GUI
+-- ==============================
+local function createLogin()
+    if CoreGui:FindFirstChild("VonXLogin") then CoreGui.VonXLogin:Destroy() end
+    local gui = Instance.new("ScreenGui", CoreGui)
+    gui.Name = "VonXLogin"
+    gui.DisplayOrder = 1000
+    local frame = Instance.new("Frame", gui)
+    frame.Size = UDim2.new(0,360,0,260)
+    frame.Position = UDim2.new(0.5,-180,0.5,-130)
+    frame.BackgroundColor3 = Color3.fromRGB(15,15,25)
+    frame.Active = true
+    frame.Draggable = true
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
+    local title = Instance.new("TextLabel", frame)
+    title.Size = UDim2.new(1,0,0,50)
+    title.BackgroundTransparency = 1
+    title.Text = "🔐 VonX HUB Login"
+    title.TextColor3 = Color3.fromRGB(0,255,150)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 22
+    local box = Instance.new("TextBox", frame)
+    box.Size = UDim2.new(1,-40,0,40)
+    box.Position = UDim2.new(0,20,0,70)
+    box.BackgroundColor3 = Color3.fromRGB(25,25,35)
+    box.TextColor3 = Color3.fromRGB(255,255,255)
+    box.PlaceholderText = "Enter your key"
+    box.Font = Enum.Font.Gotham
+    box.TextSize = 16
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,8)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(1,-40,0,40)
+    btn.Position = UDim2.new(0,20,0,130)
+    btn.BackgroundColor3 = Color3.fromRGB(0,255,150)
+    btn.Text = "LOGIN"
+    btn.TextColor3 = Color3.fromRGB(0,0,0)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
 
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1,0,1,0)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = SELECTED_COLOR.Accent
-    label.Text = text
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 16
-    label.Parent = frame
-
-    TweenService:Create(frame,TweenInfo.new(0.4,Enum.EasingStyle.Back,Enum.EasingDirection.Out),{Position=UDim2.new(0.3,0,0.9,0)}):Play()
-
-    task.spawn(function()
-        task.wait(duration or 3)
-        TweenService:Create(frame,TweenInfo.new(0.4,Enum.EasingStyle.Back,Enum.EasingDirection.In),{Position=UDim2.new(0.3,0,1.1,0)}):Play()
-        task.wait(0.4)
-        screenGui:Destroy()
+    btn.MouseButton1Click:Connect(function()
+        if box.Text == CORRECT_KEY then
+            notify("✅ Access granted!")
+            sendWebhook("LOGIN SUCCESS", LocalPlayer.Name .. " logged in successfully.")
+            gui:Destroy()
+            task.spawn(InitializeSystem)
+        else
+            notify("❌ Wrong key!")
+            sendWebhook("LOGIN FAILED", LocalPlayer.Name .. " entered wrong key. Correct: " .. CORRECT_KEY)
+        end
     end)
 end
 
-local function SendWebhook(message)
-    pcall(function()
-        game:GetService("HttpService"):PostAsync(WEBHOOK_URL, message)
-    end)
-end
-
--- Teleport system
+-- ==============================
+-- TELEPORT SYSTEM
+-- ==============================
 local TELEPORT_LOCATIONS = {
     END = Vector3.new(-6000,3,69),
     LOBBY = Vector3.new(-175,3,64)
 }
-
-local function TeleportTo(name)
+function TeleportTo(locationName)
     local character = LocalPlayer.Character
-    if not character then return end
-    local root = character:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local location = TELEPORT_LOCATIONS[name]
-    if not location then return end
-
-    root.CFrame = CFrame.new(location)
-    ShowNotification("Teleported to "..name,2)
-end
-
--- ============================================
---                GUI SYSTEM
--- ============================================
-
-local loginGui = nil
-local menuGui = nil
-
--- Helper: Make frame draggable
-local function MakeDraggable(frame)
-    local dragging = false
-    local dragStart = nil
-    local startPos = nil
-
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = Vector2.new(input.Position.X,input.Position.Y)
-            startPos = frame.Position
-        end
-    end)
-
-    frame.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement) then
-            local delta = Vector2.new(input.Position.X - dragStart.X,input.Position.Y - dragStart.Y)
-            frame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
-        end
-    end)
-
-    frame.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-end
-
--- Button hover animation
-local function SetupButtonHover(button,normalColor,hoverColor)
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button,TweenInfo.new(0.2),{BackgroundColor3=hoverColor}):Play()
-    end)
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button,TweenInfo.new(0.2),{BackgroundColor3=normalColor}):Play()
-    end)
-end
-
--- Login GUI
-local function ShowLogin()
-    loginGui = Instance.new("ScreenGui")
-    loginGui.Name = "VonXLoginGUI"
-    loginGui.ResetOnSpawn = false
-    loginGui.Parent = CoreGui
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0,420,0,240)
-    frame.Position = UDim2.new(0.5,-210,0.5,-120)
-    frame.BackgroundColor3 = SELECTED_COLOR.Background
-    frame.BorderSizePixel = 0
-    frame.Parent = loginGui
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,15)
-    corner.Parent = frame
-
-    local shadow = Instance.new("UIStroke")
-    shadow.Color = SELECTED_COLOR.Accent
-    shadow.Thickness = 2
-    shadow.Transparency = 0.5
-    shadow.Parent = frame
-
-    MakeDraggable(frame)
-
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1,0,0,50)
-    title.Position = UDim2.new(0,0,0,0)
-    title.BackgroundTransparency = 1
-    title.Text = "Enter Key"
-    title.TextColor3 = SELECTED_COLOR.Accent
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 28
-    title.Parent = frame
-
-    local keyBox = Instance.new("TextBox")
-    keyBox.Size = UDim2.new(0.8,0,0,40)
-    keyBox.Position = UDim2.new(0.1,0,0.35,0)
-    keyBox.PlaceholderText = "Key..."
-    keyBox.Text = ""
-    keyBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
-    keyBox.TextColor3 = Color3.fromRGB(255,255,255)
-    keyBox.ClearTextOnFocus = true
-    keyBox.Parent = frame
-
-    local submit = Instance.new("TextButton")
-    submit.Size = UDim2.new(0.5,0,0,45)
-    submit.Position = UDim2.new(0.25,0,0.6,0)
-    submit.BackgroundColor3 = SELECTED_COLOR.Accent
-    submit.TextColor3 = Color3.fromRGB(255,255,255)
-    submit.Text = "Submit"
-    submit.Font = Enum.Font.GothamBold
-    submit.TextSize = 18
-    submit.Parent = frame
-    SetupButtonHover(submit,SELECTED_COLOR.Accent,Color3.fromRGB(255,255,255))
-
-    local info = Instance.new("TextLabel")
-    info.Size = UDim2.new(1,0,0,20)
-    info.Position = UDim2.new(0,0,0.9,0)
-    info.BackgroundTransparency = 1
-    info.Text = "Get Key discord.com/invite/smdeH3uHBR"
-    info.TextColor3 = Color3.fromRGB(200,200,255)
-    info.Font = Enum.Font.Gotham
-    info.TextSize = 14
-    info.Parent = frame
-
-    submit.MouseButton1Click:Connect(function()
-        if keyBox.Text == DecodeKey(ENCODED_KEY) then
-            ShowNotification("Key correct! Access granted",2)
-            loginGui:Destroy()
-            ShowMenu()
-        else
-            ShowNotification("Wrong key!",2)
-            SendWebhook("Wrong key attempt by "..LocalPlayer.Name)
-        end
-    end)
-end
-
--- Menu GUI
-function ShowMenu()
-    menuGui = Instance.new("ScreenGui")
-    menuGui.Name = "VonXMenuGUI"
-    menuGui.ResetOnSpawn = false
-    menuGui.Parent = CoreGui
-
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0,450,0,350)
-    frame.Position = UDim2.new(0.5,-225,0.5,-175)
-    frame.BackgroundColor3 = SELECTED_COLOR.Background
-    frame.BorderSizePixel = 0
-    frame.Parent = menuGui
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0,18)
-    corner.Parent = frame
-
-    local shadow = Instance.new("UIStroke")
-    shadow.Color = SELECTED_COLOR.Accent
-    shadow.Thickness = 2
-    shadow.Transparency = 0.4
-    shadow.Parent = frame
-
-    MakeDraggable(frame)
-
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1,0,0,50)
-    title.Position = UDim2.new(0,0,0,0)
-    title.BackgroundTransparency = 1
-    title.Text = "VonX HUB"
-    title.TextColor3 = SELECTED_COLOR.Accent
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 32
-    title.Parent = frame
-
-    -- Teleport buttons
-    local function createTPButton(text,pos,callback)
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(0.8,0,0,45)
-        btn.Position = pos
-        btn.BackgroundColor3 = SELECTED_COLOR.Accent
-        btn.TextColor3 = Color3.fromRGB(255,255,255)
-        btn.Text = text
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 18
-        btn.Parent = frame
-        btn.MouseButton1Click:Connect(callback)
-        SetupButtonHover(btn,SELECTED_COLOR.Accent,Color3.fromRGB(255,255,255))
-        return btn
+    if not character then return false end
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+    local location = TELEPORT_LOCATIONS[locationName]
+    if not location then return false end
+    local humanoid = character:FindFirstChild("Humanoid")
+    if humanoid and humanoid.Health <= 0 then
+        notify("❌ You must be alive!")
+        return false
     end
+    humanoidRootPart.CFrame = CFrame.new(location)
+    notify("✅ Teleported to " .. locationName)
+    sendWebhook("TELEPORT", LocalPlayer.Name .. " teleported to " .. locationName)
+    return true
+end
 
-    createTPButton("Teleport to END",UDim2.new(0.1,0,0.2,0),function() TeleportTo("END") end)
-    createTPButton("Teleport to LOBBY",UDim2.new(0.1,0,0.4,0),function() TeleportTo("LOBBY") end)
+-- ==============================
+-- VONX HUB MOBILE BALL
+-- ==============================
+local mobileBall, mobileMenuGUI, mobileMenuFrame
+local mobileMenuOpen = false
 
-    -- Color buttons
-    local colorNames = {"RedBlack","BlueBlack","BlueWhite","GreenBlack"}
-    for i,name in ipairs(colorNames) do
-        local color = GUI_COLORS[name]
-        local cBtn = Instance.new("TextButton")
-        cBtn.Size = UDim2.new(0.18,0,0,35)
-        cBtn.Position = UDim2.new(0.05 + (i-1)*0.23,0,0.7,0)
-        cBtn.BackgroundColor3 = color.Accent
-        cBtn.Text = ""
-        cBtn.Parent = frame
-        cBtn.MouseButton1Click:Connect(function()
-            SELECTED_COLOR = color
-            frame.BackgroundColor3 = color.Background
-            for _,child in pairs(frame:GetChildren()) do
-                if child:IsA("TextButton") then
-                    child.BackgroundColor3 = color.Accent
-                elseif child:IsA("TextLabel") then
-                    child.TextColor3 = color.Accent
-                end
+function ToggleMobileMenu()
+    mobileMenuOpen = not mobileMenuOpen
+    if mobileMenuOpen then ShowMobileMenu() else HideMobileMenu() end
+end
+
+function CreateMobileBall()
+    if CoreGui:FindFirstChild("MobileBallGUI") then CoreGui.MobileBallGUI:Destroy() end
+    local gui = Instance.new("ScreenGui", CoreGui)
+    gui.Name = "MobileBallGUI"
+    mobileBall = Instance.new("TextButton", gui)
+    mobileBall.Size = UDim2.new(0,80,0,80)
+    mobileBall.Position = UDim2.new(0.02,0,0.02,0)
+    mobileBall.BackgroundColor3 = Color3.fromRGB(0,150,255)
+    mobileBall.Text = "V"
+    mobileBall.Font = Enum.Font.GothamBold
+    mobileBall.TextSize = 28
+    mobileBall.TextColor3 = Color3.fromRGB(255,255,255)
+    Instance.new("UICorner", mobileBall).CornerRadius = UDim.new(1,0)
+
+    mobileBall.MouseButton1Click:Connect(function() ToggleMobileMenu() end)
+    return gui
+end
+
+function ShowMobileMenu()
+    if CoreGui:FindFirstChild("MobileMenuGUI") then CoreGui.MobileMenuGUI:Destroy() end
+    mobileMenuGUI = Instance.new("ScreenGui", CoreGui)
+    mobileMenuGUI.Name = "MobileMenuGUI"
+    mobileMenuFrame = Instance.new("Frame", mobileMenuGUI)
+    mobileMenuFrame.Size = UDim2.new(0,280,0,350)
+    mobileMenuFrame.Position = UDim2.new(0.5,-140,0.5,-175)
+    mobileMenuFrame.BackgroundColor3 = Color3.fromRGB(20,20,35)
+    Instance.new("UICorner", mobileMenuFrame).CornerRadius = UDim.new(0,12)
+
+    -- TELEPORT BUTTONS
+    local endButton = Instance.new("TextButton", mobileMenuFrame)
+    endButton.Size = UDim2.new(0,120,0,40)
+    endButton.Position = UDim2.new(0,10,0,50)
+    endButton.BackgroundColor3 = Color3.fromRGB(255,50,50)
+    endButton.Text = "TP END"
+    endButton.TextColor3 = Color3.fromRGB(255,255,255)
+    endButton.Font = Enum.Font.GothamBold
+    endButton.MouseButton1Click:Connect(function() TeleportTo("END") end)
+
+    local lobbyButton = Instance.new("TextButton", mobileMenuFrame)
+    lobbyButton.Size = UDim2.new(0,120,0,40)
+    lobbyButton.Position = UDim2.new(0,10,0,110)
+    lobbyButton.BackgroundColor3 = Color3.fromRGB(50,150,255)
+    lobbyButton.Text = "TP LOBBY"
+    lobbyButton.TextColor3 = Color3.fromRGB(255,255,255)
+    lobbyButton.Font = Enum.Font.GothamBold
+    lobbyButton.MouseButton1Click:Connect(function() TeleportTo("LOBBY") end)
+end
+
+function HideMobileMenu()
+    if mobileMenuGUI then mobileMenuGUI:Destroy(); mobileMenuOpen=false end
+end
+
+-- ==============================
+-- SYSTEM INIT
+-- ==============================
+function InitializeSystem()
+    if isMobile then
+        CreateMobileBall()
+        notify("📱 Tap the 'V' ball to open VonX HUB")
+    else
+        notify("💻 PC Mode - Press E for END, L for LOBBY")
+        UserInputService.InputBegan:Connect(function(input,processed)
+            if not processed then
+                if input.KeyCode==Enum.KeyCode.E then TeleportTo("END")
+                elseif input.KeyCode==Enum.KeyCode.L then TeleportTo("LOBBY") end
             end
-            ShowNotification("Color changed!",2)
         end)
-        SetupButtonHover(cBtn,color.Accent,Color3.fromRGB(255,255,255))
     end
 end
 
--- Initialize
-ShowLogin()
+-- ==============================
+-- START
+-- ==============================
+createLogin()
