@@ -1,0 +1,218 @@
+--// VonX HUB | Encrypted Key + Neon UI + Auto Farm
+
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local StarterGui = game:GetService("StarterGui")
+local player = Players.LocalPlayer
+
+-- =========================
+-- ENCRYPTED KEY SYSTEM (PerClickVonX)
+-- =========================
+local _enc = {171,222,216,202,215,214,218,222,237,216,219,239}
+local _xor = 123
+
+local function _checkKey(input)
+	if #input ~= #_enc then return false end
+	for i = 1, #_enc do
+		if bit32.bxor(input:byte(i), _xor) ~= _enc[i] then
+			return false
+		end
+	end
+	return true
+end
+
+-- =========================
+-- CLEAN OLD GUI
+-- =========================
+if getgenv().VonXAutoFarmGUI then
+	getgenv().VonXAutoFarmGUI:Destroy()
+	getgenv().VonXAutoFarmGUI = nil
+end
+if CoreGui:FindFirstChild("VonX_Login") then
+	CoreGui.VonX_Login:Destroy()
+end
+
+-- =========================
+-- LOGIN GUI (Neon Green / Black)
+-- =========================
+local LoginGui = Instance.new("ScreenGui", CoreGui)
+LoginGui.Name = "VonX_Login"
+LoginGui.ResetOnSpawn = false
+
+local LoginFrame = Instance.new("Frame", LoginGui)
+LoginFrame.Size = UDim2.new(0,350,0,230)
+LoginFrame.Position = UDim2.new(0.5,-175,0.5,-115)
+LoginFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+LoginFrame.BorderSizePixel = 0
+LoginFrame.Active = true
+LoginFrame.Draggable = true
+Instance.new("UICorner", LoginFrame).CornerRadius = UDim.new(0,14)
+
+local Stroke = Instance.new("UIStroke", LoginFrame)
+Stroke.Color = Color3.fromRGB(0,255,100)
+Stroke.Thickness = 2
+
+local Title = Instance.new("TextLabel", LoginFrame)
+Title.Size = UDim2.new(1,0,0,45)
+Title.BackgroundTransparency = 1
+Title.Text = "🔐 VonX HUB Login"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.TextColor3 = Color3.fromRGB(0,255,100)
+
+local KeyBox = Instance.new("TextBox", LoginFrame)
+KeyBox.Size = UDim2.new(1,-40,0,40)
+KeyBox.Position = UDim2.new(0,20,0,60)
+KeyBox.PlaceholderText = "Enter key here..."
+KeyBox.Text = ""
+KeyBox.ClearTextOnFocus = false
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.TextSize = 14
+KeyBox.TextColor3 = Color3.fromRGB(0,255,100)
+KeyBox.BackgroundColor3 = Color3.fromRGB(15,15,15)
+Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0,8)
+
+local Submit = Instance.new("TextButton", LoginFrame)
+Submit.Size = UDim2.new(1,-40,0,40)
+Submit.Position = UDim2.new(0,20,0,115)
+Submit.Text = "Login"
+Submit.Font = Enum.Font.GothamBold
+Submit.TextSize = 14
+Submit.TextColor3 = Color3.fromRGB(0,0,0)
+Submit.BackgroundColor3 = Color3.fromRGB(0,255,100)
+Instance.new("UICorner", Submit).CornerRadius = UDim.new(0,8)
+
+local DiscordBtn = Instance.new("TextButton", LoginFrame)
+DiscordBtn.Size = UDim2.new(1,-40,0,30)
+DiscordBtn.Position = UDim2.new(0,20,0,165)
+DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
+DiscordBtn.Font = Enum.Font.Gotham
+DiscordBtn.TextSize = 12
+DiscordBtn.TextColor3 = Color3.fromRGB(0,255,100)
+DiscordBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+Instance.new("UICorner", DiscordBtn).CornerRadius = UDim.new(0,8)
+DiscordBtn.MouseButton1Click:Connect(function()
+	setclipboard("https://discord.gg/smdeH3uHBR")
+	DiscordBtn.Text = "✔ Copied to clipboard!"
+	task.wait(1.2)
+	DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
+end)
+
+-- =========================
+-- AUTO FARM CONFIG
+-- =========================
+local tpDelay = 1
+local yOffset = -0.7
+
+local targetCFrame = CFrame.new(
+	2114.81104,
+	304.580322 + yOffset,
+	1154.00549,
+	-0.951911569, 0.301718324, -0.053201247,
+	-8.2516074e-09, 0.17364867, 0.98480767,
+	0.306372851, 0.937300563, -0.166511193
+)
+
+-- =========================
+-- MAIN HUB GUI
+-- =========================
+local function loadVonXHub()
+	local gui = Instance.new("ScreenGui", CoreGui)
+	gui.Name = "VonX_AutoFarm"
+	getgenv().VonXAutoFarmGUI = gui
+
+	local openBtn = Instance.new("TextButton", gui)
+	openBtn.Size = UDim2.new(0, 120, 0, 40)
+	openBtn.Position = UDim2.new(0, 20, 0, 200)
+	openBtn.Text = "OPEN"
+	openBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	openBtn.TextColor3 = Color3.fromRGB(0,255,100)
+	openBtn.Font = Enum.Font.GothamBold
+	openBtn.TextSize = 14
+	Instance.new("UICorner", openBtn).CornerRadius = UDim.new(0,8)
+	local stroke1 = Instance.new("UIStroke", openBtn)
+	stroke1.Color = Color3.fromRGB(0,255,100)
+	stroke1.Thickness = 2
+
+	local frame = Instance.new("Frame", gui)
+	frame.Size = UDim2.new(0, 220, 0, 130)
+	frame.Position = UDim2.new(0, 20, 0, 250)
+	frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+	frame.BorderSizePixel = 0
+	frame.Visible = false
+	frame.Active = true
+	frame.Draggable = true
+	Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+	local stroke2 = Instance.new("UIStroke", frame)
+	stroke2.Color = Color3.fromRGB(0,255,100)
+	stroke2.Thickness = 2
+
+	local title = Instance.new("TextLabel", frame)
+	title.Size = UDim2.new(1,0,0,35)
+	title.BackgroundTransparency = 1
+	title.Text = "VonX HUB - Auto Farm"
+	title.TextColor3 = Color3.fromRGB(0,255,100)
+	title.Font = Enum.Font.GothamBold
+	title.TextSize = 14
+
+	local autoBtn = Instance.new("TextButton", frame)
+	autoBtn.Size = UDim2.new(1, -20, 0, 40)
+	autoBtn.Position = UDim2.new(0, 10, 0, 50)
+	autoBtn.Text = "Auto Farm: OFF"
+	autoBtn.BackgroundColor3 = Color3.fromRGB(15,15,15)
+	autoBtn.TextColor3 = Color3.fromRGB(0,255,100)
+	autoBtn.Font = Enum.Font.GothamBold
+	autoBtn.TextSize = 14
+	Instance.new("UICorner", autoBtn).CornerRadius = UDim.new(0,8)
+
+	-- OPEN / CLOSE
+	openBtn.MouseButton1Click:Connect(function()
+		frame.Visible = not frame.Visible
+		openBtn.Text = frame.Visible and "CLOSE" or "OPEN"
+	end)
+
+	-- AUTO FARM
+	local farming = false
+
+	autoBtn.MouseButton1Click:Connect(function()
+		farming = not farming
+		autoBtn.Text = farming and "Auto Farm: ON" or "Auto Farm: OFF"
+		StarterGui:SetCore("SendNotification", {
+			Title = "VonX HUB",
+			Text = farming and "Auto Farm Enabled" or "Auto Farm Disabled",
+			Duration = 2
+		})
+	end)
+
+	-- LOOP
+	task.spawn(function()
+		while true do
+			task.wait(tpDelay)
+			if farming then
+				local char = player.Character
+				if char and char:FindFirstChild("HumanoidRootPart") then
+					char.HumanoidRootPart.CFrame = targetCFrame
+				end
+			end
+		end
+	end)
+end
+
+-- =========================
+-- LOGIN LOGIC
+-- =========================
+Submit.MouseButton1Click:Connect(function()
+	local enteredKey = KeyBox.Text
+	if _checkKey(enteredKey) then
+		Submit.Text = "✅ Access Granted"
+		task.wait(0.5)
+		LoginGui:Destroy()
+		loadVonXHub()
+	else
+		Submit.Text = "❌ Wrong Key"
+		task.wait(1)
+		Submit.Text = "Login"
+	end
+end)
