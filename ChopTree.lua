@@ -38,17 +38,13 @@ local function sendLog(msg)
     end)
 end
 
--- HWID (device id benzeri)
 local HWID = game:GetService("RbxAnalyticsService"):GetClientId()
 
--- Admin sistemi
 local Admins = {}
 Admins[_0xOWNER]=true
 
--- Script aktif oyuncular
 local ActiveUsers = {}
 
--- GUI yoksa oluştur
 if CoreGui:FindFirstChild("VonXHubUI") then
     CoreGui.VonXHubUI:Destroy()
 end
@@ -62,8 +58,8 @@ ScreenGui.Name="VonXHubUI"
 ScreenGui.ResetOnSpawn=false
 
 local Frame=Instance.new("Frame",ScreenGui)
-Frame.Size=UDim2.new(0,320,0,200)
-Frame.Position=UDim2.new(0.5,-160,0.5,-100)
+Frame.Size=UDim2.new(0,320,0,230)
+Frame.Position=UDim2.new(0.5,-160,0.5,-115)
 Frame.BackgroundColor3=Color3.fromRGB(0,0,0)
 Frame.BorderSizePixel=0
 Frame.Active=true
@@ -100,6 +96,16 @@ Submit.Font=Enum.Font.GothamBold
 Submit.TextSize=14
 Instance.new("UICorner",Submit).CornerRadius=UDim.new(0,8)
 
+-- Get Key Label
+local GetKeyLabel=Instance.new("TextLabel",Frame)
+GetKeyLabel.Size=UDim2.new(1,0,0,30)
+GetKeyLabel.Position=UDim2.new(0,0,0,170)
+GetKeyLabel.BackgroundTransparency=1
+GetKeyLabel.Text="Get Key https://discord.gg/smdeH3uHBR"
+GetKeyLabel.TextColor3=Color3.fromRGB(0,255,0)
+GetKeyLabel.Font=Enum.Font.Gotham
+GetKeyLabel.TextSize=12
+
 -- =========================
 -- MAIN HUB
 -- =========================
@@ -110,7 +116,6 @@ local function loadVonXHub()
 
     ActiveUsers[lp.Name]=true
 
-    -- Ana GUI
     if ScreenGui then ScreenGui:Destroy() end
 
     local HubGui=Instance.new("ScreenGui",CoreGui)
@@ -134,7 +139,6 @@ local function loadVonXHub()
     Header.Font=Enum.Font.GothamBold
     Header.TextSize=16
 
-    -- Start Chopping Button
     local StartBtn=Instance.new("TextButton",MainFrame)
     StartBtn.Size=UDim2.new(0,200,0,45)
     StartBtn.Position=UDim2.new(0,30,0,70)
@@ -145,7 +149,6 @@ local function loadVonXHub()
     StartBtn.TextSize=14
     Instance.new("UICorner",StartBtn).CornerRadius=UDim.new(0,8)
 
-    -- Stop Button
     local StopBtn=Instance.new("TextButton",MainFrame)
     StopBtn.Size=UDim2.new(0,200,0,45)
     StopBtn.Position=UDim2.new(0,30,0,130)
@@ -156,7 +159,6 @@ local function loadVonXHub()
     StopBtn.TextSize=14
     Instance.new("UICorner",StopBtn).CornerRadius=UDim.new(0,8)
 
-    -- Durum Label
     local Status=Instance.new("TextLabel",MainFrame)
     Status.Size=UDim2.new(0,200,0,30)
     Status.Position=UDim2.new(0,30,0,190)
@@ -182,7 +184,6 @@ local function loadVonXHub()
         sendLog("🛑 **"..lp.Name.."** stopped chopping.")
     end)
 
-    -- Sağ Ctrl ile aç/kapat
     UIS.InputBegan:Connect(function(input,gp)
         if gp then return end
         if input.KeyCode==Enum.KeyCode.RightControl then
@@ -190,7 +191,6 @@ local function loadVonXHub()
         end
     end)
 
-    -- Chopping loop
     task.spawn(function()
         while true do
             task.wait(0.01)
@@ -201,10 +201,6 @@ local function loadVonXHub()
             end
         end
     end)
-
-    -- =========================
-    -- ADMIN PANEL
-    -- =========================
 
     if Admins[lp.Name] then
 
@@ -288,7 +284,6 @@ local function loadVonXHub()
             end
         end)
 
-        -- Admin ekstra özellik: kaç kişi scriptte
         local CountLabel=Instance.new("TextLabel",AdminFrame)
         CountLabel.Size=UDim2.new(1,-20,0,25)
         CountLabel.Position=UDim2.new(0,10,0,195)
@@ -310,7 +305,6 @@ local function loadVonXHub()
 
     end
 
-    -- Kullanıcının scripti admin tarafından kapatıldıysa
     task.spawn(function()
         while true do
             task.wait(1)
@@ -323,10 +317,6 @@ local function loadVonXHub()
         end
     end)
 end
-
--- =========================
--- KEY CHECK
--- =========================
 
 Submit.MouseButton1Click:Connect(function()
     local entered=TextBox.Text
