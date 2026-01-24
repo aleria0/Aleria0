@@ -1,45 +1,30 @@
---// SERVICES
+-- SERVICES
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 
 local LocalPlayer = Players.LocalPlayer
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
 
---// 🔐 ENCRYPTED KEY SYSTEM (XOR)
-local ENCRYPTED_KEY = {33, 52, 49, 54, 36, 40, 49, 57, 40, 51, 51, 42, 55} -- EscapeForVonX XOR 23
-local XOR_KEY = 23
+-- KEY
+local CORRECT_KEY = "EscapeForVonX"
 
-local function decryptKey()
-    local s = ""
-    for i = 1, #ENCRYPTED_KEY do
-        s = s .. string.char(ENCRYPTED_KEY[i] ~ XOR_KEY)
-    end
-    return s
-end
-
-local function checkKey(input)
-    return input == decryptKey()
-end
-
---// 📡 WEBHOOK
-local function sendWebhook(title, message)
+-- WEBHOOK FUNCTION
+local function sendWebhook(title, msg)
     pcall(function()
         HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode({
             username = "VonX Logger",
             embeds = {{
                 title = title,
-                description = message,
+                description = msg,
                 color = 65280
             }}
         }))
     end)
 end
 
---// 🔔 NOTIFICATION
+-- NOTIFICATION FUNCTION
 local function notify(text)
     StarterGui:SetCore("SendNotification", {
         Title = "VonX HUB",
@@ -48,17 +33,7 @@ local function notify(text)
     })
 end
 
---// 🎨 THEMES
-local Themes = {
-    ["RedBlack"] = {Main=Color3.fromRGB(15,15,20),Accent=Color3.fromRGB(255,50,50),Button=Color3.fromRGB(180,40,40),Text=Color3.fromRGB(255,255,255)},
-    ["BlueBlack"] = {Main=Color3.fromRGB(15,15,25),Accent=Color3.fromRGB(0,180,255),Button=Color3.fromRGB(0,140,200),Text=Color3.fromRGB(255,255,255)},
-    ["BlueWhite"] = {Main=Color3.fromRGB(230,240,255),Accent=Color3.fromRGB(0,120,255),Button=Color3.fromRGB(0,160,255),Text=Color3.fromRGB(20,20,20)},
-    ["GreenBlack"] = {Main=Color3.fromRGB(10,15,10),Accent=Color3.fromRGB(0,255,120),Button=Color3.fromRGB(0,180,90),Text=Color3.fromRGB(255,255,255)}
-}
-
-local CurrentTheme = Themes.BlueBlack
-
---// LOGIN GUI
+-- CREATE LOGIN GUI
 local function createLogin()
     if CoreGui:FindFirstChild("VonX_Login") then CoreGui.VonX_Login:Destroy() end
     local gui = Instance.new("ScreenGui", CoreGui)
@@ -68,20 +43,17 @@ local function createLogin()
     local frame = Instance.new("Frame", gui)
     frame.Size = UDim2.new(0, 360, 0, 260)
     frame.Position = UDim2.new(0.5, -180, 0.5, -130)
-    frame.BackgroundColor3 = CurrentTheme.Main
+    frame.BackgroundColor3 = Color3.fromRGB(15,15,25)
     frame.BorderSizePixel = 0
     frame.Active = true
     frame.Draggable = true
     Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
-    local stroke = Instance.new("UIStroke", frame)
-    stroke.Color = CurrentTheme.Accent
-    stroke.Thickness = 2
-
+    
     local title = Instance.new("TextLabel", frame)
     title.Size = UDim2.new(1,0,0,50)
     title.BackgroundTransparency = 1
     title.Text = "🔐 VonX HUB Login"
-    title.TextColor3 = CurrentTheme.Accent
+    title.TextColor3 = Color3.fromRGB(0,255,150)
     title.Font = Enum.Font.GothamBold
     title.TextSize = 22
 
@@ -99,31 +71,31 @@ local function createLogin()
     local btn = Instance.new("TextButton", frame)
     btn.Size = UDim2.new(1,-40,0,40)
     btn.Position = UDim2.new(0,20,0,130)
-    btn.BackgroundColor3 = CurrentTheme.Button
+    btn.BackgroundColor3 = Color3.fromRGB(0,255,150)
     btn.Text = "LOGIN"
-    btn.TextColor3 = CurrentTheme.Text
+    btn.TextColor3 = Color3.fromRGB(0,0,0)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 16
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
 
     btn.MouseButton1Click:Connect(function()
-        if checkKey(box.Text) then
+        if box.Text == CORRECT_KEY then
+            notify("✅ Access granted!")
             sendWebhook("LOGIN SUCCESS", LocalPlayer.Name .. " logged in successfully.")
-            notify("Access granted!")
             gui:Destroy()
             startSystem()
         else
-            local correctKey = decryptKey()
-            sendWebhook("LOGIN FAILED", "Player: " .. LocalPlayer.Name .. "\nEntered: " .. box.Text .. "\nCorrect Key: " .. correctKey)
             notify("❌ Wrong key!")
+            sendWebhook("LOGIN FAILED", LocalPlayer.Name .. " entered wrong key. Correct Key: " .. CORRECT_KEY)
         end
     end)
 end
 
---// SYSTEM START
-local function startSystem()
+-- START SYSTEM
+function startSystem()
     notify("Welcome to VonX HUB! Key verified ✅")
+    -- Buraya GUI, teleports, modüller vs eklenebilir
 end
 
---// INIT
+-- INIT
 createLogin()
