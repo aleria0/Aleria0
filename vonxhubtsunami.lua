@@ -1,4 +1,4 @@
---// VonX HUB | Fixed Admin + GUI + Notifications
+--// VonX HUB | Admin Notifications & Script Control
 
 repeat task.wait() until game:IsLoaded()
 
@@ -9,7 +9,7 @@ local CoreGui = game:GetService("CoreGui")
 local lp = Players.LocalPlayer
 
 -- =========================
--- WEBHOOK & NOTIFY FUNCTION
+-- WEBHOOK
 -- =========================
 local WEBHOOK = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
 local function sendWebhook(title, desc)
@@ -18,20 +18,7 @@ local function sendWebhook(title, desc)
             Url = WEBHOOK,
             Method = "POST",
             Headers = {["Content-Type"]="application/json"},
-            Body = HttpService:JSONEncode({
-                username="VonX HUB Logger",
-                embeds={{title=title, description=desc, color=65280}}
-            })
-        })
-    end)
-end
-
-local function notify(text)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title="VonX HUB",
-            Text=text,
-            Duration=3
+            Body = HttpService:JSONEncode({username="VonX HUB Logger", embeds={{title=title, description=desc, color=65280}}})
         })
     end)
 end
@@ -121,7 +108,6 @@ Instance.new("UICorner", DiscordBtn).CornerRadius = UDim.new(0,8)
 DiscordBtn.MouseButton1Click:Connect(function()
     setclipboard("https://discord.gg/smdeH3uHBR")
     DiscordBtn.Text = "✔ Copied to clipboard!"
-    notify("Discord link copied!")
     task.wait(1.2)
     DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
 end)
@@ -129,10 +115,10 @@ end)
 -- =========================
 -- LOAD HUB
 -- =========================
+local HubActive = true
 local function loadVonXHub()
     ActiveUsers[lp.Name]=true
     sendWebhook("User Logged In", lp.Name.." logged in.")
-    notify("Welcome to VonX HUB!")
 
     local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
     WindUI:SetNotificationLower(true)
@@ -149,10 +135,27 @@ local function loadVonXHub()
     local AdminTab = Window:Tab({Title="Admin Panel", Icon="shield"})
 
     Main:Select()
-    Main:Button({Title="Test Button", Callback=function()
-        notify("Test Button Pressed")
-        sendWebhook("Action", lp.Name.." pressed Test Button")
-    end})
+    Main:Button({Title="Test Button", Callback=function() WindUI:Notify("Test Button Clicked") end})
+
+    -- =========================
+    -- SCRIPT CONTROL BUTTON
+    -- =========================
+    if isAdmin(lp) then
+        AdminTab:Button({
+            Title="Shutdown Script",
+            Callback=function()
+                local confirm = WindUI:Prompt("Are you sure? This will shutdown the script.")
+                if confirm then
+                    HubActive = false
+                    WindUI:Notify("Script has been shut down.")
+                    sendWebhook("Script Shutdown", lp.Name.." shut down the script.")
+                    LoginGui:Destroy()
+                    CoreGui:FindFirstChild("VonX_Main"):Destroy()
+                    return
+                end
+            end
+        })
+    end
 
     -- =========================
     -- ADMIN PANEL
@@ -170,22 +173,22 @@ local function loadVonXHub()
         AdminTab:Input({Title="Add Admin", Placeholder="Player name", Callback=function(name)
             if lp.Name==OWNER then
                 Admins[name]=true
-                notify("Admin added: "..name)
+                WindUI:Notify(name.." added as admin")
                 sendWebhook("Admin Added", lp.Name.." added "..name)
             end
         end})
         AdminTab:Input({Title="Remove Admin", Placeholder="Player name", Callback=function(name)
             if lp.Name==OWNER then
                 Admins[name]=nil
-                notify("Admin removed: "..name)
+                WindUI:Notify(name.." removed from admin")
                 sendWebhook("Admin Removed", lp.Name.." removed "..name)
             end
         end})
-        AdminTab:Input({Title="Kick Player Script", Placeholder="Player name", Callback=function(name)
+        AdminTab:Input({Title="Kill Player Script", Placeholder="Player name", Callback=function(name)
             for plr in pairs(ActiveUsers) do
                 if plr==name then
                     ActiveUsers[plr]=nil
-                    notify("Script disabled for "..plr)
+                    WindUI:Notify("Killed script for "..plr)
                     sendWebhook("Script Killed", lp.Name.." killed script for "..plr)
                 end
             end
@@ -203,14 +206,12 @@ Submit.MouseButton1Click:Connect(function()
     if _c(enteredKey) then
         Submit.Text="✅ Access Granted"
         sendWebhook("Login Success", lp.Name.." entered correct key.")
-        notify("Login Successful!")
         task.wait(0.5)
         LoginGui:Destroy()
         loadVonXHub()
     else
         Submit.Text="❌ Wrong Key"
         sendWebhook("Login Failed", lp.Name.." entered wrong key.")
-        notify("Wrong Key!")
         task.wait(1)
         Submit.Text="Login"
     end
