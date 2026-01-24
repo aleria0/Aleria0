@@ -8,9 +8,9 @@ local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
 
 -- =========================
--- ENCRYPTED KEY SYSTEM (PerClickVonX)
+-- ENCRYPTED KEY SYSTEM (BecomeFastestVonX)
 -- =========================
-local _enc = {171,222,216,202,215,214,218,222,237,216,219,239}
+local _enc = {217,238,254,224,228,234,249,234,235,235,239,236,232,239,232,229,217}
 local _xor = 123
 
 local function _checkKey(input)
