@@ -1,0 +1,188 @@
+--// VonX HUB | Encrypted Key + Neon UI + Discord Button
+
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local lp = Players.LocalPlayer
+
+-- =========================
+-- ENCRYPTED KEY SYSTEM
+-- =========================
+local _enc = {178,207,201,160,199,198,202,207,240,201,206,242}
+local _xor = 123
+
+local function _checkKey(input)
+    if #input ~= #_enc then return false end
+    for i = 1, #_enc do
+        if bit32.bxor(input:byte(i), _xor) ~= _enc[i] then
+            return false
+        end
+    end
+    return true
+end
+
+-- =========================
+-- CLEAN OLD GUI
+-- =========================
+if getgenv().SkidHubGUI then
+    getgenv().SkidHubGUI:Destroy()
+    getgenv().SkidHubGUI = nil
+end
+if CoreGui:FindFirstChild("VonX_Login") then CoreGui.VonX_Login:Destroy() end
+
+-- =========================
+-- LOGIN GUI (Neon Green / Black)
+-- =========================
+local LoginGui = Instance.new("ScreenGui", CoreGui)
+LoginGui.Name = "VonX_Login"
+LoginGui.ResetOnSpawn = false
+
+local LoginFrame = Instance.new("Frame", LoginGui)
+LoginFrame.Size = UDim2.new(0,350,0,230)
+LoginFrame.Position = UDim2.new(0.5,-175,0.5,-115)
+LoginFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+LoginFrame.BorderSizePixel = 0
+LoginFrame.Active = true
+LoginFrame.Draggable = true
+Instance.new("UICorner", LoginFrame).CornerRadius = UDim.new(0,14)
+local Stroke = Instance.new("UIStroke", LoginFrame)
+Stroke.Color = Color3.fromRGB(0,255,100)
+Stroke.Thickness = 2
+
+local Title = Instance.new("TextLabel", LoginFrame)
+Title.Size = UDim2.new(1,0,0,45)
+Title.BackgroundTransparency = 1
+Title.Text = "🔐 VonX HUB Login"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.TextColor3 = Color3.fromRGB(0,255,100)
+
+local KeyBox = Instance.new("TextBox", LoginFrame)
+KeyBox.Size = UDim2.new(1,-40,0,40)
+KeyBox.Position = UDim2.new(0,20,0,60)
+KeyBox.PlaceholderText = "Enter key here..."
+KeyBox.Text = ""
+KeyBox.ClearTextOnFocus = false
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.TextSize = 14
+KeyBox.TextColor3 = Color3.fromRGB(0,255,100)
+KeyBox.BackgroundColor3 = Color3.fromRGB(15,15,15)
+Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0,8)
+
+local Submit = Instance.new("TextButton", LoginFrame)
+Submit.Size = UDim2.new(1,-40,0,40)
+Submit.Position = UDim2.new(0,20,0,115)
+Submit.Text = "Login"
+Submit.Font = Enum.Font.GothamBold
+Submit.TextSize = 14
+Submit.TextColor3 = Color3.fromRGB(0,0,0)
+Submit.BackgroundColor3 = Color3.fromRGB(0,255,100)
+Instance.new("UICorner", Submit).CornerRadius = UDim.new(0,8)
+
+local DiscordBtn = Instance.new("TextButton", LoginFrame)
+DiscordBtn.Size = UDim2.new(1,-40,0,30)
+DiscordBtn.Position = UDim2.new(0,20,0,165)
+DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
+DiscordBtn.Font = Enum.Font.Gotham
+DiscordBtn.TextSize = 12
+DiscordBtn.TextColor3 = Color3.fromRGB(0,255,100)
+DiscordBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+Instance.new("UICorner", DiscordBtn).CornerRadius = UDim.new(0,8)
+DiscordBtn.MouseButton1Click:Connect(function()
+    setclipboard("https://discord.gg/smdeH3uHBR")
+    DiscordBtn.Text = "✔ Copied to clipboard!"
+    task.wait(1.2)
+    DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
+end)
+
+-- =========================
+-- HUB GUI
+-- =========================
+local function loadSkidHub()
+    local ScreenGui = Instance.new("ScreenGui", CoreGui)
+    ScreenGui.Name = "SkidHub"
+    getgenv().SkidHubGUI = ScreenGui
+
+    local Frame = Instance.new("Frame", ScreenGui)
+    Frame.Size = UDim2.new(0, 200, 0, 100)
+    Frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+    Frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    Frame.BorderSizePixel = 0
+    Frame.Active = true
+    Frame.Draggable = true
+    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0,10)
+
+    local Stroke2 = Instance.new("UIStroke", Frame)
+    Stroke2.Color = Color3.fromRGB(0,255,100)
+    Stroke2.Thickness = 2
+
+    local Title = Instance.new("TextLabel", Frame)
+    Title.Size = UDim2.new(1, 0, 0, 30)
+    Title.BackgroundTransparency = 1
+    Title.Text = "VonX HUB"
+    Title.TextColor3 = Color3.fromRGB(0,255,100)
+    Title.TextSize = 18
+    Title.Font = Enum.Font.GothamBold
+
+    local Button = Instance.new("TextButton", Frame)
+    Button.Size = UDim2.new(1,-20,0,40)
+    Button.Position = UDim2.new(0,10,0,45)
+    Button.BackgroundColor3 = Color3.fromRGB(15,15,15)
+    Button.Text = "Inf SP: OFF"
+    Button.TextColor3 = Color3.fromRGB(0,255,100)
+    Button.TextSize = 16
+    Button.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0,8)
+
+    local Enabled = false
+    local Connection
+
+    local function Toggle()
+        Enabled = not Enabled
+        Button.Text = Enabled and "Inf SP: ON" or "Inf SP: OFF"
+
+        if Enabled then
+            Connection = game:GetService("RunService").Stepped:Connect(function()
+                local args = {
+                    {
+                        "Magic Damage",
+                        -999999999999999999999999999999
+                    }
+                }
+                workspace:WaitForChild("__THINGS"):WaitForChild("__REMOTES"):WaitForChild("update_stats"):FireServer(unpack(args))
+            end)
+        else
+            if Connection then
+                Connection:Disconnect()
+                Connection = nil
+            end
+        end
+    end
+
+    Button.MouseButton1Click:Connect(function()
+        Toggle()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title="VonX HUB",
+            Text=Enabled and "Inf SP Enabled" or "Inf SP Disabled",
+            Duration=2
+        })
+    end)
+end
+
+-- =========================
+-- LOGIN BUTTON
+-- =========================
+Submit.MouseButton1Click:Connect(function()
+    local enteredKey = KeyBox.Text
+    if _checkKey(enteredKey) then
+        Submit.Text = "✅ Access Granted"
+        task.wait(0.5)
+        LoginGui:Destroy()
+        loadSkidHub()
+    else
+        Submit.Text = "❌ Wrong Key"
+        task.wait(1)
+        Submit.Text = "Login"
+    end
+end)
