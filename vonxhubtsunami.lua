@@ -429,7 +429,7 @@ local function loadVonxHub()
         Step = 1,
         Value = {
             Min = 16,
-            Max = 150000,
+            Max = 1500,
             Default = 16,
         },
         Callback = function(value)
