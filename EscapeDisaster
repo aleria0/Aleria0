@@ -9,19 +9,23 @@ local StarterGui = game:GetService("StarterGui")
 local LocalPlayer = Players.LocalPlayer
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
 
---// ENCRYPTED KEY SYSTEM (EscapeVonX)
-local _k = {70,118,100,99,115,101,89,115,109,89} -- encrypted
-local function checkKey(input)
-    if #input ~= #_k then return false end
-    for i = 1, #_k do
-        if input:byte(i) ~= _k[i] - 2 then
-            return false
-        end
+--// 🔐 ENCRYPTED KEY SYSTEM (XOR)
+local ENCRYPTED_KEY = {33, 52, 49, 54, 36, 40, 49, 57, 40, 51, 51, 42, 55} -- EscapeForVonX XOR 23
+local XOR_KEY = 23
+
+local function decryptKey()
+    local s = ""
+    for i = 1, #ENCRYPTED_KEY do
+        s = s .. string.char(ENCRYPTED_KEY[i] ~ XOR_KEY)
     end
-    return true
+    return s
 end
 
---// WEBHOOK
+local function checkKey(input)
+    return input == decryptKey()
+end
+
+--// 📡 WEBHOOK
 local function sendWebhook(title, message)
     pcall(function()
         HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode({
@@ -35,7 +39,7 @@ local function sendWebhook(title, message)
     end)
 end
 
---// NOTIFICATION
+--// 🔔 NOTIFICATION
 local function notify(text)
     StarterGui:SetCore("SendNotification", {
         Title = "VonX HUB",
@@ -44,376 +48,81 @@ local function notify(text)
     })
 end
 
+--// 🎨 THEMES
+local Themes = {
+    ["RedBlack"] = {Main=Color3.fromRGB(15,15,20),Accent=Color3.fromRGB(255,50,50),Button=Color3.fromRGB(180,40,40),Text=Color3.fromRGB(255,255,255)},
+    ["BlueBlack"] = {Main=Color3.fromRGB(15,15,25),Accent=Color3.fromRGB(0,180,255),Button=Color3.fromRGB(0,140,200),Text=Color3.fromRGB(255,255,255)},
+    ["BlueWhite"] = {Main=Color3.fromRGB(230,240,255),Accent=Color3.fromRGB(0,120,255),Button=Color3.fromRGB(0,160,255),Text=Color3.fromRGB(20,20,20)},
+    ["GreenBlack"] = {Main=Color3.fromRGB(10,15,10),Accent=Color3.fromRGB(0,255,120),Button=Color3.fromRGB(0,180,90),Text=Color3.fromRGB(255,255,255)}
+}
+
+local CurrentTheme = Themes.BlueBlack
+
 --// LOGIN GUI
 local function createLogin()
     if CoreGui:FindFirstChild("VonX_Login") then CoreGui.VonX_Login:Destroy() end
-
     local gui = Instance.new("ScreenGui", CoreGui)
     gui.Name = "VonX_Login"
     gui.ResetOnSpawn = false
 
     local frame = Instance.new("Frame", gui)
-    frame.Size = UDim2.new(0, 360, 0, 230)
-    frame.Position = UDim2.new(0.5, -180, 0.5, -115)
-    frame.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
+    frame.Size = UDim2.new(0, 360, 0, 260)
+    frame.Position = UDim2.new(0.5, -180, 0.5, -130)
+    frame.BackgroundColor3 = CurrentTheme.Main
     frame.BorderSizePixel = 0
     frame.Active = true
     frame.Draggable = true
-
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,14)
     local stroke = Instance.new("UIStroke", frame)
-    stroke.Color = Color3.fromRGB(0, 255, 255)
+    stroke.Color = CurrentTheme.Accent
     stroke.Thickness = 2
 
     local title = Instance.new("TextLabel", frame)
-    title.Size = UDim2.new(1, 0, 0, 50)
+    title.Size = UDim2.new(1,0,0,50)
     title.BackgroundTransparency = 1
     title.Text = "🔐 VonX HUB Login"
-    title.TextColor3 = Color3.fromRGB(0, 255, 255)
+    title.TextColor3 = CurrentTheme.Accent
     title.Font = Enum.Font.GothamBold
     title.TextSize = 22
 
     local box = Instance.new("TextBox", frame)
-    box.Size = UDim2.new(1, -40, 0, 40)
-    box.Position = UDim2.new(0, 20, 0, 70)
-    box.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
-    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.Size = UDim2.new(1,-40,0,40)
+    box.Position = UDim2.new(0,20,0,70)
+    box.BackgroundColor3 = Color3.fromRGB(25,25,35)
+    box.TextColor3 = Color3.fromRGB(255,255,255)
     box.PlaceholderText = "Enter your key"
     box.Font = Enum.Font.Gotham
     box.TextSize = 16
     box.ClearTextOnFocus = false
-    Instance.new("UICorner", box).CornerRadius = UDim.new(0, 8)
+    Instance.new("UICorner", box).CornerRadius = UDim.new(0,8)
 
     local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(1, -40, 0, 40)
-    btn.Position = UDim2.new(0, 20, 0, 130)
-    btn.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+    btn.Size = UDim2.new(1,-40,0,40)
+    btn.Position = UDim2.new(0,20,0,130)
+    btn.BackgroundColor3 = CurrentTheme.Button
     btn.Text = "LOGIN"
-    btn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    btn.TextColor3 = CurrentTheme.Text
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 16
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-    local discordBtn = Instance.new("TextButton", frame)
-    discordBtn.Size = UDim2.new(1, -40, 0, 30)
-    discordBtn.Position = UDim2.new(0, 20, 0, 180)
-    discordBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 30)
-    discordBtn.Text = "Get Key (Click to Copy Discord)"
-    discordBtn.TextColor3 = Color3.fromRGB(0, 255, 255)
-    discordBtn.Font = Enum.Font.Gotham
-    discordBtn.TextSize = 12
-    Instance.new("UICorner", discordBtn).CornerRadius = UDim.new(0, 8)
-
-    discordBtn.MouseButton1Click:Connect(function()
-        setclipboard("https://discord.gg/smdeH3uHBR")
-        notify("Discord link copied!")
-    end)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
 
     btn.MouseButton1Click:Connect(function()
         if checkKey(box.Text) then
-            sendWebhook("LOGIN SUCCESS", LocalPlayer.Name .. " logged in.")
+            sendWebhook("LOGIN SUCCESS", LocalPlayer.Name .. " logged in successfully.")
             notify("Access granted!")
             gui:Destroy()
             startSystem()
         else
-            sendWebhook("LOGIN FAILED", LocalPlayer.Name .. " entered wrong key.")
+            local correctKey = decryptKey()
+            sendWebhook("LOGIN FAILED", "Player: " .. LocalPlayer.Name .. "\nEntered: " .. box.Text .. "\nCorrect Key: " .. correctKey)
             notify("❌ Wrong key!")
         end
     end)
 end
 
---// TELEPORT LOCATIONS
-local TELEPORT_LOCATIONS = {
-    END = Vector3.new(-6000, 3, 69),
-    LOBBY = Vector3.new(-175, 3, 64)
-}
-
-local function TeleportTo(locationName)
-    local character = LocalPlayer.Character
-    if not character then return end
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    hrp.CFrame = CFrame.new(TELEPORT_LOCATIONS[locationName])
-    notify("Teleported to " .. locationName)
-    sendWebhook("TELEPORT", LocalPlayer.Name .. " teleported to " .. locationName)
-end
-
---// MOBILE MENU SYSTEM
-local isMobile = UserInputService.TouchEnabled
-local mobileMenuOpen = false
-local mobileMenuGUI
-local mobileMenuFrame
-
-local function HideMobileMenu()
-    if mobileMenuGUI then
-        TweenService:Create(mobileMenuFrame, TweenInfo.new(0.3), {
-            Position = UDim2.new(0.5, -150, 1.5, 0),
-            BackgroundTransparency = 1
-        }):Play()
-        task.wait(0.3)
-        mobileMenuGUI:Destroy()
-        mobileMenuGUI = nil
-        mobileMenuFrame = nil
-        mobileMenuOpen = false
-    end
-end
-
-local function ShowMobileMenu()
-    if CoreGui:FindFirstChild("VonX_Menu") then CoreGui.VonX_Menu:Destroy() end
-
-    mobileMenuGUI = Instance.new("ScreenGui", CoreGui)
-    mobileMenuGUI.Name = "VonX_Menu"
-    mobileMenuGUI.ResetOnSpawn = false
-
-    mobileMenuFrame = Instance.new("Frame", mobileMenuGUI)
-    mobileMenuFrame.Size = UDim2.new(0, 300, 0, 380)
-    mobileMenuFrame.Position = UDim2.new(0.5, -150, 1.5, 0)
-    mobileMenuFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 25)
-    mobileMenuFrame.BorderSizePixel = 0
-    mobileMenuFrame.Active = true
-    mobileMenuFrame.Draggable = true
-    Instance.new("UICorner", mobileMenuFrame).CornerRadius = UDim.new(0, 12)
-    local stroke = Instance.new("UIStroke", mobileMenuFrame)
-    stroke.Color = Color3.fromRGB(0, 255, 255)
-    stroke.Thickness = 2
-
-    local titleBar = Instance.new("Frame", mobileMenuFrame)
-    titleBar.Size = UDim2.new(1, 0, 0, 50)
-    titleBar.BackgroundColor3 = Color3.fromRGB(15, 15, 35)
-    titleBar.BorderSizePixel = 0
-    Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 12)
-
-    local title = Instance.new("TextLabel", titleBar)
-    title.Size = UDim2.new(1, -60, 1, 0)
-    title.Position = UDim2.new(0, 10, 0, 0)
-    title.BackgroundTransparency = 1
-    title.Text = "VonX HUB"
-    title.TextColor3 = Color3.fromRGB(0, 255, 255)
-    title.Font = Enum.Font.GothamBold
-    title.TextSize = 22
-    title.TextXAlignment = Enum.TextXAlignment.Left
-
-    local closeBtn = Instance.new("TextButton", titleBar)
-    closeBtn.Size = UDim2.new(0, 40, 0, 40)
-    closeBtn.Position = UDim2.new(1, -45, 0.5, -20)
-    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-    closeBtn.Text = "✕"
-    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeBtn.Font = Enum.Font.GothamBold
-    closeBtn.TextSize = 18
-    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
-
-    local content = Instance.new("Frame", mobileMenuFrame)
-    content.Size = UDim2.new(1, -20, 1, -70)
-    content.Position = UDim2.new(0, 10, 0, 60)
-    content.BackgroundTransparency = 1
-
-    local function createCard(yPos, titleText, coordsText, btnText, btnColor, callback)
-        local card = Instance.new("Frame", content)
-        card.Size = UDim2.new(1, 0, 0, 130)
-        card.Position = UDim2.new(0, 0, 0, yPos)
-        card.BackgroundColor3 = Color3.fromRGB(25, 25, 45)
-        card.BackgroundTransparency = 0.2
-        card.BorderSizePixel = 0
-        Instance.new("UICorner", card).CornerRadius = UDim.new(0, 10)
-
-        local stroke = Instance.new("UIStroke", card)
-        stroke.Color = btnColor
-        stroke.Thickness = 2
-        stroke.Transparency = 0.4
-
-        local title = Instance.new("TextLabel", card)
-        title.Size = UDim2.new(1, 0, 0, 40)
-        title.BackgroundTransparency = 1
-        title.Text = titleText
-        title.TextColor3 = btnColor
-        title.Font = Enum.Font.GothamBold
-        title.TextSize = 20
-
-        local coords = Instance.new("TextLabel", card)
-        coords.Size = UDim2.new(1, -20, 0, 50)
-        coords.Position = UDim2.new(0, 10, 0, 40)
-        coords.BackgroundTransparency = 1
-        coords.Text = coordsText
-        coords.TextColor3 = Color3.fromRGB(220, 220, 255)
-        coords.Font = Enum.Font.Gotham
-        coords.TextSize = 14
-        coords.TextXAlignment = Enum.TextXAlignment.Left
-        coords.TextYAlignment = Enum.TextYAlignment.Top
-
-        local btn = Instance.new("TextButton", card)
-        btn.Size = UDim2.new(1, -20, 0, 35)
-        btn.Position = UDim2.new(0, 10, 1, -45)
-        btn.BackgroundColor3 = btnColor
-        btn.Text = btnText
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = 16
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
-
-        btn.MouseButton1Click:Connect(callback)
-    end
-
-    createCard(10, "🌋 TELEPORT TO END", "📍 X: -6000\nY: 3  Z: 69", "TELEPORT", Color3.fromRGB(255, 80, 80), function()
-        TeleportTo("END")
-    end)
-
-    createCard(150, "🏠 TELEPORT TO LOBBY", "📍 X: -175\nY: 3  Z: 64", "TELEPORT", Color3.fromRGB(80, 180, 255), function()
-        TeleportTo("LOBBY")
-    end)
-
-    local shutdownBtn = Instance.new("TextButton", mobileMenuFrame)
-    shutdownBtn.Size = UDim2.new(1, -40, 0, 40)
-    shutdownBtn.Position = UDim2.new(0, 20, 1, -50)
-    shutdownBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-    shutdownBtn.Text = "SHUT DOWN SCRIPT"
-    shutdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    shutdownBtn.Font = Enum.Font.GothamBold
-    shutdownBtn.TextSize = 16
-    Instance.new("UICorner", shutdownBtn).CornerRadius = UDim.new(0, 8)
-
-    shutdownBtn.MouseButton1Click:Connect(function()
-        local confirm = Instance.new("BindableFunction")
-        confirm.OnInvoke = function(choice)
-            if choice == "Yes" then
-                sendWebhook("SCRIPT SHUTDOWN", LocalPlayer.Name .. " shut down the script.")
-                notify("Script shut down.")
-                if CoreGui:FindFirstChild("MobileBallGUI") then CoreGui.MobileBallGUI:Destroy() end
-                if CoreGui:FindFirstChild("VonX_Menu") then CoreGui.VonX_Menu:Destroy() end
-                if CoreGui:FindFirstChild("VonX_Login") then CoreGui.VonX_Login:Destroy() end
-            end
-        end
-        StarterGui:SetCore("SendNotification", {
-            Title = "Shut Down Script",
-            Text = "Are you sure?",
-            Duration = 5,
-            Callback = confirm,
-            Button1 = "Yes",
-            Button2 = "No"
-        })
-    end)
-
-    closeBtn.MouseButton1Click:Connect(function()
-        HideMobileMenu()
-    end)
-
-    TweenService:Create(mobileMenuFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -150, 0.5, -190),
-        BackgroundTransparency = 0.1
-    }):Play()
-
-    mobileMenuOpen = true
-end
-
-local function ToggleMobileMenu()
-    mobileMenuOpen = not mobileMenuOpen
-    if mobileMenuOpen then
-        ShowMobileMenu()
-    else
-        HideMobileMenu()
-    end
-end
-
-local function CreateMobileBall()
-    if CoreGui:FindFirstChild("MobileBallGUI") then CoreGui.MobileBallGUI:Destroy() end
-
-    local gui = Instance.new("ScreenGui", CoreGui)
-    gui.Name = "MobileBallGUI"
-    gui.ResetOnSpawn = false
-
-    local ball = Instance.new("TextButton", gui)
-    ball.Size = UDim2.new(0, 80, 0, 80)
-    ball.Position = UDim2.new(0.02, 0, 0.02, 0)
-    ball.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
-    ball.BackgroundTransparency = 0.2
-    ball.BorderSizePixel = 0
-    ball.Text = ""
-    ball.Active = true
-    ball.AutoButtonColor = false
-    Instance.new("UICorner", ball).CornerRadius = UDim.new(1, 0)
-
-    local stroke = Instance.new("UIStroke", ball)
-    stroke.Color = Color3.fromRGB(255, 255, 255)
-    stroke.Thickness = 3
-    stroke.Transparency = 0.3
-
-    local text = Instance.new("TextLabel", ball)
-    text.Size = UDim2.new(1, 0, 1, 0)
-    text.BackgroundTransparency = 1
-    text.Text = "L"
-    text.TextColor3 = Color3.fromRGB(255, 255, 255)
-    text.Font = Enum.Font.GothamBold
-    text.TextSize = 28
-    text.TextStrokeTransparency = 0.5
-    text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-
-    local isDragging = false
-    local dragStart, startPos
-
-    ball.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragStart = Vector2.new(input.Position.X, input.Position.Y)
-            startPos = ball.Position
-            isDragging = false
-            TweenService:Create(ball, TweenInfo.new(0.1), {
-                Size = UDim2.new(0, 75, 0, 75),
-                BackgroundTransparency = 0.4
-            }):Play()
-        end
-    end)
-
-    ball.InputChanged:Connect(function(input)
-        if dragStart and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
-            local delta = (Vector2.new(input.Position.X, input.Position.Y) - dragStart).Magnitude
-            if delta > 10 then
-                isDragging = true
-                local newDelta = Vector2.new(input.Position.X - dragStart.X, input.Position.Y - dragStart.Y)
-                ball.Position = UDim2.new(
-                    startPos.X.Scale,
-                    startPos.X.Offset + newDelta.X,
-                    startPos.Y.Scale,
-                    startPos.Y.Offset + newDelta.Y
-                )
-            end
-        end
-    end)
-
-    ball.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
-            TweenService:Create(ball, TweenInfo.new(0.1), {
-                Size = UDim2.new(0, 80, 0, 80),
-                BackgroundTransparency = 0.2
-            }):Play()
-            if not isDragging then
-                ToggleMobileMenu()
-            end
-            isDragging = false
-            dragStart = nil
-            startPos = nil
-        end
-    end)
-end
-
 --// SYSTEM START
-function startSystem()
-    notify("Welcome to VonX HUB!")
-    sendWebhook("SYSTEM STARTED", LocalPlayer.Name .. " started the system.")
-
-    if isMobile then
-        CreateMobileBall()
-        notify("Tap the L button to open the menu.")
-    else
-        notify("Press E for END | Press L for LOBBY")
-        UserInputService.InputBegan:Connect(function(input, processed)
-            if not processed then
-                if input.KeyCode == Enum.KeyCode.E then
-                    TeleportTo("END")
-                elseif input.KeyCode == Enum.KeyCode.L then
-                    TeleportTo("LOBBY")
-                end
-            end
-        end)
-    end
+local function startSystem()
+    notify("Welcome to VonX HUB! Key verified ✅")
 end
 
 --// INIT
