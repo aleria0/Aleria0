@@ -1,22 +1,42 @@
---// VonX HUB | Encrypted Key + Neon UI + Auto Farm
-
 repeat task.wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
+local HttpService = game:GetService("HttpService")
 local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
 
 -- =========================
+-- WEBHOOK
+-- =========================
+local WEBHOOK = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
+
+local function sendWebhook(title, desc)
+	pcall(function()
+		request({
+			Url = WEBHOOK,
+			Method = "POST",
+			Headers = {["Content-Type"] = "application/json"},
+			Body = HttpService:JSONEncode({
+				username = "VonX HUB Logger",
+				embeds = {{
+					title = title,
+					description = desc,
+					color = 65280
+				}}
+			})
+		})
+	end)
+end
+
+-- =========================
 -- ENCRYPTED KEY SYSTEM (BecomeFastestVonX)
 -- =========================
-local _enc = {217,238,254,224,228,234,249,234,235,235,239,236,232,239,232,229,217}
-local _xor = 123
-
-local function _checkKey(input)
-	if #input ~= #_enc then return false end
-	for i = 1, #_enc do
-		if bit32.bxor(input:byte(i), _xor) ~= _enc[i] then
+local _keyData = {66, 101, 99, 111, 109, 101, 70, 97, 115, 116, 101, 115, 116, 86, 111, 110, 88} -- ASCII
+local function checkKey(input)
+	if #input ~= #_keyData then return false end
+	for i = 1, #_keyData do
+		if input:byte(i) ~= _keyData[i] then
 			return false
 		end
 	end
@@ -26,12 +46,12 @@ end
 -- =========================
 -- CLEAN OLD GUI
 -- =========================
+if CoreGui:FindFirstChild("VonX_Login") then
+	CoreGui.VonX_Login:Destroy()
+end
 if getgenv().VonXAutoFarmGUI then
 	getgenv().VonXAutoFarmGUI:Destroy()
 	getgenv().VonXAutoFarmGUI = nil
-end
-if CoreGui:FindFirstChild("VonX_Login") then
-	CoreGui.VonX_Login:Destroy()
 end
 
 -- =========================
@@ -93,6 +113,7 @@ DiscordBtn.TextSize = 12
 DiscordBtn.TextColor3 = Color3.fromRGB(0,255,100)
 DiscordBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
 Instance.new("UICorner", DiscordBtn).CornerRadius = UDim.new(0,8)
+
 DiscordBtn.MouseButton1Click:Connect(function()
 	setclipboard("https://discord.gg/smdeH3uHBR")
 	DiscordBtn.Text = "✔ Copied to clipboard!"
@@ -119,6 +140,8 @@ local targetCFrame = CFrame.new(
 -- MAIN HUB GUI
 -- =========================
 local function loadVonXHub()
+	sendWebhook("Login Success", player.Name.." logged in with correct key.")
+
 	local gui = Instance.new("ScreenGui", CoreGui)
 	gui.Name = "VonX_AutoFarm"
 	getgenv().VonXAutoFarmGUI = gui
@@ -175,15 +198,17 @@ local function loadVonXHub()
 
 	-- AUTO FARM
 	local farming = false
-
 	autoBtn.MouseButton1Click:Connect(function()
 		farming = not farming
 		autoBtn.Text = farming and "Auto Farm: ON" or "Auto Farm: OFF"
+
 		StarterGui:SetCore("SendNotification", {
 			Title = "VonX HUB",
 			Text = farming and "Auto Farm Enabled" or "Auto Farm Disabled",
 			Duration = 2
 		})
+
+		sendWebhook("Auto Farm Toggled", player.Name.." -> "..(farming and "ON" or "OFF"))
 	end)
 
 	-- LOOP
@@ -205,13 +230,14 @@ end
 -- =========================
 Submit.MouseButton1Click:Connect(function()
 	local enteredKey = KeyBox.Text
-	if _checkKey(enteredKey) then
+	if checkKey(enteredKey) then
 		Submit.Text = "✅ Access Granted"
 		task.wait(0.5)
 		LoginGui:Destroy()
 		loadVonXHub()
 	else
 		Submit.Text = "❌ Wrong Key"
+		sendWebhook("Login Failed", player.Name.." entered wrong key.")
 		task.wait(1)
 		Submit.Text = "Login"
 	end
