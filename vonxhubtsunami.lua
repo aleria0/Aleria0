@@ -1,107 +1,146 @@
---[[ 
-    Vonx Hub | Escape Tsunami for Brainrots
-    Encrypted Key System + Script
-]]
+--// VonX HUB | Full System (Encrypted + Admin + Webhook + Neon UI)
 
 repeat task.wait() until game:IsLoaded()
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
-local rf = ReplicatedStorage.RemoteFunctions
+local UserInputService = game:GetService("UserInputService")
 local lp = Players.LocalPlayer
+local rf = ReplicatedStorage:WaitForChild("RemoteFunctions")
 
 -- =========================
--- KEY SYSTEM
+-- WEBHOOK
 -- =========================
+local WEBHOOK = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
 
-if CoreGui:FindFirstChild("VonxKeyUI") then
-    CoreGui:FindFirstChild("VonxKeyUI"):Destroy()
+local function sendWebhook(title, description)
+    local data = {
+        ["username"] = "VonX HUB Logger",
+        ["embeds"] = {{
+            ["title"] = title,
+            ["description"] = description,
+            ["color"] = 65280
+        }}
+    }
+    pcall(function()
+        request({
+            Url = WEBHOOK,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(data)
+        })
+    end)
 end
 
--- 🔒 Encrypted Key: "TsunamiVonX"
-local encryptedKey = {84,115,117,110,97,109,105,86,111,110,88}
-
-local function checkKey(input)
-    if #input ~= #encryptedKey then return false end
-    for i = 1, #encryptedKey do
-        if input:byte(i) ~= encryptedKey[i] then
-            return false
-        end
+-- =========================
+-- ENCRYPTED KEY CHECK
+-- =========================
+local _k = {84,115,117,110,97,109,105,86,111,110,88} -- TsunamiVonX ASCII (obfuscated)
+local function _c(i)
+    if #i ~= #_k then return false end
+    for x = 1, #_k do
+        if i:byte(x) ~= _k[x] then return false end
     end
     return true
 end
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "VonxKeyUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = CoreGui
+-- =========================
+-- ADMIN SYSTEM (ENCRYPTED)
+-- =========================
+local OWNER = "woxlee_yann"
+local Admins = {[OWNER] = true}
+local ActiveUsers = {}
 
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 320, 0, 240)
-Frame.Position = UDim2.new(0.5, -160, 0.5, -120)
-Frame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-Frame.BorderSizePixel = 0
-Frame.Active = true
-Frame.Draggable = true
+local function isAdmin(p)
+    return Admins[p.Name] == true
+end
 
-Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 12)
+-- =========================
+-- GUI CLEANUP
+-- =========================
+if CoreGui:FindFirstChild("VonX_Login") then CoreGui.VonX_Login:Destroy() end
+if CoreGui:FindFirstChild("VonX_Main") then CoreGui.VonX_Main:Destroy() end
 
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, 0, 0, 40)
+-- =========================
+-- LOGIN UI (Neon Green / Black)
+-- =========================
+local LoginGui = Instance.new("ScreenGui", CoreGui)
+LoginGui.Name = "VonX_Login"
+LoginGui.ResetOnSpawn = false
+
+local LoginFrame = Instance.new("Frame", LoginGui)
+LoginFrame.Size = UDim2.new(0, 350, 0, 230)
+LoginFrame.Position = UDim2.new(0.5, -175, 0.5, -115)
+LoginFrame.BackgroundColor3 = Color3.fromRGB(5,5,5)
+LoginFrame.BorderSizePixel = 0
+LoginFrame.Active = true
+LoginFrame.Draggable = true
+Instance.new("UICorner", LoginFrame).CornerRadius = UDim.new(0, 14)
+
+local Stroke = Instance.new("UIStroke", LoginFrame)
+Stroke.Color = Color3.fromRGB(0,255,100)
+Stroke.Thickness = 2
+
+local Title = Instance.new("TextLabel", LoginFrame)
+Title.Size = UDim2.new(1,0,0,45)
 Title.BackgroundTransparency = 1
-Title.Text = "🔐 Vonx Hub Login"
-Title.TextColor3 = Color3.fromRGB(0, 255, 0)
+Title.Text = "🔐 VonX HUB Login"
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
+Title.TextSize = 18
+Title.TextColor3 = Color3.fromRGB(0,255,100)
 
-local TextBox = Instance.new("TextBox", Frame)
-TextBox.Size = UDim2.new(1, -40, 0, 40)
-TextBox.Position = UDim2.new(0, 20, 0, 60)
-TextBox.PlaceholderText = "Enter key here..."
-TextBox.Text = ""
-TextBox.ClearTextOnFocus = false
-TextBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-TextBox.TextColor3 = Color3.fromRGB(0, 255, 0)
-TextBox.Font = Enum.Font.Gotham
-TextBox.TextSize = 14
+local KeyBox = Instance.new("TextBox", LoginFrame)
+KeyBox.Size = UDim2.new(1,-40,0,40)
+KeyBox.Position = UDim2.new(0,20,0,60)
+KeyBox.PlaceholderText = "Enter key here..."
+KeyBox.Text = ""
+KeyBox.ClearTextOnFocus = false
+KeyBox.Font = Enum.Font.Gotham
+KeyBox.TextSize = 14
+KeyBox.TextColor3 = Color3.fromRGB(0,255,100)
+KeyBox.BackgroundColor3 = Color3.fromRGB(15,15,15)
+Instance.new("UICorner", KeyBox).CornerRadius = UDim.new(0,8)
 
-Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0, 8)
-
-local Submit = Instance.new("TextButton", Frame)
-Submit.Size = UDim2.new(1, -40, 0, 40)
-Submit.Position = UDim2.new(0, 20, 0, 115)
-Submit.Text = "Submit Key"
-Submit.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
-Submit.TextColor3 = Color3.fromRGB(0, 0, 0)
+local Submit = Instance.new("TextButton", LoginFrame)
+Submit.Size = UDim2.new(1,-40,0,40)
+Submit.Position = UDim2.new(0,20,0,115)
+Submit.Text = "Login"
 Submit.Font = Enum.Font.GothamBold
 Submit.TextSize = 14
+Submit.TextColor3 = Color3.fromRGB(0,0,0)
+Submit.BackgroundColor3 = Color3.fromRGB(0,255,100)
+Instance.new("UICorner", Submit).CornerRadius = UDim.new(0,8)
 
-Instance.new("UICorner", Submit).CornerRadius = UDim.new(0, 8)
+local DiscordBtn = Instance.new("TextButton", LoginFrame)
+DiscordBtn.Size = UDim2.new(1,-40,0,30)
+DiscordBtn.Position = UDim2.new(0,20,0,165)
+DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
+DiscordBtn.Font = Enum.Font.Gotham
+DiscordBtn.TextSize = 12
+DiscordBtn.TextColor3 = Color3.fromRGB(0,255,100)
+DiscordBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+Instance.new("UICorner", DiscordBtn).CornerRadius = UDim.new(0,8)
 
--- 🔗 Get Key Button
-local GetKeyBtn = Instance.new("TextButton", Frame)
-GetKeyBtn.Size = UDim2.new(1, -40, 0, 30)
-GetKeyBtn.Position = UDim2.new(0, 20, 0, 165)
-GetKeyBtn.BackgroundTransparency = 1
-GetKeyBtn.Text = "Get Key → https://discord.gg/smdeH3uHBR"
-GetKeyBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
-GetKeyBtn.Font = Enum.Font.Gotham
-GetKeyBtn.TextSize = 12
-
-GetKeyBtn.MouseButton1Click:Connect(function()
+DiscordBtn.MouseButton1Click:Connect(function()
     setclipboard("https://discord.gg/smdeH3uHBR")
-    GetKeyBtn.Text = "Copied! ✅"
-    task.wait(1)
-    GetKeyBtn.Text = "Get Key → https://discord.gg/smdeH3uHBR"
+    DiscordBtn.Text = "✔ Copied to clipboard!"
+    task.wait(1.2)
+    DiscordBtn.Text = "Get Key https://discord.gg/smdeH3uHBR"
 end)
 
 -- =========================
 -- MAIN SCRIPT FUNCTION
 -- =========================
+local function loadVonXHub()
 
-local function loadVonxHub()
+    ActiveUsers[lp.Name] = true
+    sendWebhook("User Logged In", lp.Name .. " has logged into VonX HUB.")
 
+    -- =========================
+    -- GAME FUNCTIONS
+    -- =========================
     local function godmode()
         local at = workspace:FindFirstChild("ActiveTsunamis")
         if not at then return end
@@ -245,151 +284,113 @@ local function loadVonxHub()
     end
 
     -- =========================
-    -- UI (Vonx Hub)
+    -- UI (VonX Hub - Neon Theme)
     -- =========================
-
     local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
     WindUI:SetNotificationLower(true)
 
     local Window = WindUI:CreateWindow({
-        Title = "Vonx Hub",
+        Title = "VonX HUB",
         Icon = "sparkles",
         Author = "Escape Tsunami for Brainrots",
+        Theme = "Dark"
     })
 
-    Window:SetToggleKey(Enum.KeyCode.L)
+    Window:SetToggleKey(Enum.KeyCode.RightControl)
 
-    local Main = Window:Tab({
-        Title = "Main",
-        Icon = "sparkles",
-        Locked = false,
-    })
-
-    local AutoB = Window:Tab({
-        Title = "Auto Brainrots",
-        Icon = "sparkles",
-        Locked = false,
-    })
+    local Main = Window:Tab({Title = "Main", Icon = "sparkles"})
+    local AutoB = Window:Tab({Title = "Auto Brainrots", Icon = "sparkles"})
+    local AdminTab = Window:Tab({Title = "Admin Panel", Icon = "shield"})
 
     Main:Select()
 
-    Main:Button({
-        Title = "Teleport to Home",
-        Locked = false,
-        Callback = function()
-            pcall(home)
-        end
-    })
-
-    Main:Toggle({
-        Title = "Godmode",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Gm = state end
-    })
-
-    Main:Toggle({
-        Title = "No Tsunami (still can die)",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Nt = state end
-    })
-
-    Main:Toggle({
-        Title = "Auto Upgrade Speed",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Aus = state end
-    })
-
-    Main:Toggle({
-        Title = "Auto Upgrade Carry",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Auc = state end
-    })
-
-    Main:Toggle({
-        Title = "Auto Sell All",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Asa = state end
-    })
-
-    Main:Toggle({
-        Title = "Auto Rebirth",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Ar = state end
-    })
-
-    Main:Toggle({
-        Title = "Auto Upgrade Base",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Aub = state end
-    })
-
-    Main:Toggle({
-        Title = "Auto Upgrade Brainrots",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Aub2 = state end
-    })
-
-    Main:Toggle({
-        Title = "Speed Changer",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().Sc = state end
-    })
-
+    -- =========================
+    -- MAIN BUTTONS
+    -- =========================
+    Main:Button({Title = "Teleport to Home", Callback = function() pcall(home) end})
+    Main:Toggle({Title = "Godmode", Callback = function(s) getgenv().Gm = s end})
+    Main:Toggle({Title = "No Tsunami", Callback = function(s) getgenv().Nt = s end})
+    Main:Toggle({Title = "Auto Upgrade Speed", Callback = function(s) getgenv().Aus = s end})
+    Main:Toggle({Title = "Auto Upgrade Carry", Callback = function(s) getgenv().Auc = s end})
+    Main:Toggle({Title = "Auto Sell All", Callback = function(s) getgenv().Asa = s end})
+    Main:Toggle({Title = "Auto Rebirth", Callback = function(s) getgenv().Ar = s end})
+    Main:Toggle({Title = "Auto Upgrade Base", Callback = function(s) getgenv().Aub = s end})
+    Main:Toggle({Title = "Auto Upgrade Brainrots", Callback = function(s) getgenv().Aub2 = s end})
+    Main:Toggle({Title = "Speed Changer", Callback = function(s) getgenv().Sc = s end})
     Main:Slider({
         Title = "Speed",
         Step = 1,
-        Value = {
-            Min = 16,
-            Max = 150000,
-            Default = 16,
-        },
-        Callback = function(value)
-            getgenv().Scv = tonumber(value) or 16
-        end
-    })
-
-    AutoB:Toggle({
-        Title = "Auto Brainrots",
-        Icon = "sparkles",
-        Type = "Toggle",
-        Value = false,
-        Callback = function(state) getgenv().AutoBrainrots = state end
-    })
-
-    AutoB:Dropdown({
-        Title = "Tier",
-        Values = gettiers(),
-        Value = "Secret",
-        Callback = function(option)
-            tier = tostring(option)
-        end
+        Value = {Min = 16, Max = 150000, Default = 16},
+        Callback = function(v) getgenv().Scv = tonumber(v) or 16 end
     })
 
     -- =========================
-    -- Main Loop
+    -- AUTO BRAINROTS TAB
     -- =========================
+    AutoB:Toggle({Title = "Auto Brainrots", Callback = function(s) getgenv().AutoBrainrots = s end})
+    AutoB:Dropdown({Title = "Tier", Values = gettiers(), Value = "Secret", Callback = function(o) tier = tostring(o) end})
 
+    -- =========================
+    -- ADMIN PANEL (Only Admins See)
+    -- =========================
+    if not isAdmin(lp) then
+        AdminTab:Lock("Admin only 🔒")
+    else
+        AdminTab:Paragraph({Title = "Admin Panel", Description = "Owner: woxlee_yann"})
+
+        AdminTab:Paragraph({
+            Title = "Active Users",
+            Description = function()
+                local c = 0
+                for _ in pairs(ActiveUsers) do c += 1 end
+                return "Users using VonX HUB: " .. c
+            end
+        })
+
+        AdminTab:Input({
+            Title = "Add Admin",
+            Placeholder = "Enter player name",
+            Callback = function(name)
+                if lp.Name ~= OWNER then return end
+                Admins[name] = true
+                sendWebhook("Admin Added", lp.Name .. " added admin: " .. name)
+            end
+        })
+
+        AdminTab:Input({
+            Title = "Remove Admin",
+            Placeholder = "Enter player name",
+            Callback = function(name)
+                if lp.Name ~= OWNER then return end
+                Admins[name] = nil
+                sendWebhook("Admin Removed", lp.Name .. " removed admin: " .. name)
+            end
+        })
+
+        AdminTab:Input({
+            Title = "Kick User from Script",
+            Placeholder = "Enter player name",
+            Callback = function(name)
+                for plrName in pairs(ActiveUsers) do
+                    if plrName == name then
+                        ActiveUsers[plrName] = nil
+                        sendWebhook("Script Killed", lp.Name .. " killed script for: " .. name)
+                    end
+                end
+            end
+        })
+    end
+
+    -- =========================
+    -- MAIN LOOP
+    -- =========================
     task.spawn(function()
         while true do
             task.wait()
+            if not ActiveUsers[lp.Name] then
+                sendWebhook("Script Stopped", lp.Name .. "'s script was stopped by admin.")
+                break
+            end
             if getgenv().Gm then pcall(godmode) end
             if getgenv().Nt then pcall(notsu) end
             if getgenv().Aus then pcall(upgradespeed) end
@@ -412,19 +413,20 @@ local function loadVonxHub()
 end
 
 -- =========================
--- KEY CHECK LOGIC
+-- LOGIN LOGIC
 -- =========================
-
 Submit.MouseButton1Click:Connect(function()
-    local enteredKey = TextBox.Text
-    if checkKey(enteredKey) then
-        Submit.Text = "✅ Key Correct!"
-        task.wait(0.5)
-        ScreenGui:Destroy()
-        loadVonxHub()
+    local enteredKey = KeyBox.Text
+    if _c(enteredKey) then
+        Submit.Text = "✅ Access Granted"
+        sendWebhook("Login Success", lp.Name .. " entered correct key.")
+        task.wait(0.6)
+        LoginGui:Destroy()
+        loadVonXHub()
     else
-        Submit.Text = "❌ Wrong Key!"
+        Submit.Text = "❌ Wrong Key"
+        sendWebhook("Login Failed", lp.Name .. " entered wrong key.")
         task.wait(1)
-        Submit.Text = "Submit Key"
+        Submit.Text = "Login"
     end
 end)
