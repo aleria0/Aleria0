@@ -9,16 +9,17 @@ local StarterGui = game:GetService("StarterGui")
 local LocalPlayer = Players.LocalPlayer
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1464474269751709726/p6gsb-FSu94ThdDRZwhcyYL2mOG-NRf-hBF2rJiqpzSt3MNO0bZGCBa-JNdVdt_3NocG"
 
---// ENCRYPTED KEY SYSTEM
-local function decrypt(tbl)
-    local out = ""
-    for i = 1, #tbl do
-        out ..= string.char(tbl[i] - 3)
+--// ENCRYPTED KEY SYSTEM (EscapeVonX)
+local _k = {70,118,100,99,115,101,89,115,109,89} -- encrypted
+local function checkKey(input)
+    if #input ~= #_k then return false end
+    for i = 1, #_k do
+        if input:byte(i) ~= _k[i] - 2 then
+            return false
+        end
     end
-    return out
+    return true
 end
-
-local _k = {72,118,102,100,115,104,89,114,113,91} -- encrypted "EscapeVonX"
 
 --// WEBHOOK
 local function sendWebhook(title, message)
@@ -109,7 +110,7 @@ local function createLogin()
     end)
 
     btn.MouseButton1Click:Connect(function()
-        if box.Text == decrypt(_k) then
+        if checkKey(box.Text) then
             sendWebhook("LOGIN SUCCESS", LocalPlayer.Name .. " logged in.")
             notify("Access granted!")
             gui:Destroy()
@@ -140,7 +141,6 @@ end
 --// MOBILE MENU SYSTEM
 local isMobile = UserInputService.TouchEnabled
 local mobileMenuOpen = false
-local mobileBall
 local mobileMenuGUI
 local mobileMenuFrame
 
